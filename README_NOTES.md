@@ -30,3 +30,7 @@ FRONTEND_URL=http://localhost:5173
 - Docker PostgreSQL runs on port 5433 (not 5432) — local PostgreSQL was already 
   using 5432. If you don't have local PostgreSQL, change back to 5432 in 
   docker-compose.yml and backend/.env
+
+  ## WS Packages
+@nestjs/websockets, @nestjs/platform-socket.io, socket.io 
+installed in TASK_03a (required for WS type imports)
