@@ -2,8 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { users } from '../db/schema.js';
+import { UserRecord } from '../db/types.js';
 
-export type UserRecord = typeof users.$inferSelect;
+export type { UserRecord };
 
 type CreateUserData = {
   username: string;

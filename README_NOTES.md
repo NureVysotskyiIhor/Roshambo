@@ -38,3 +38,7 @@ installed in TASK_03a (required for WS type imports)
 ## Known Issues
 - db/index.ts requires `import 'dotenv/config'` at top level because 
   pg.Pool is created before NestJS ConfigModule loads .env
+
+  ## DB Types
+All Drizzle inferred types centralized in backend/src/db/types.ts
+updatedAt handled automatically via $onUpdateFn in schema

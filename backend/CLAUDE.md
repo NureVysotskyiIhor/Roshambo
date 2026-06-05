@@ -47,6 +47,12 @@ decorators/ws-current-user.decorator.ts
 - No computed/derived fields stored (calculate via query)
 - Timestamps: createdAt on all tables, updatedAt where data changes
 
+## Database Types
+All inferred Drizzle types live in backend/src/db/types.ts:
+- UserRecord, RoomRecord, RoomParticipantRecord, RoundRecord
+Import from '../db/types' in all repositories — never redefine locally.
+updatedAt is handled automatically via $onUpdateFn in schema (users, rooms tables).
+
 ## Game Store (in-memory)
 Located in game/game.store.ts
 Stores active round choices: roomCode → { playerOneChoice, playerTwoChoice }

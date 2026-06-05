@@ -24,7 +24,7 @@ export const users = pgTable('users', {
   avatarUrl: varchar('avatar_url', { length: 500 }).notNull(),
   role: userRoleEnum('role').notNull().default('registered'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdateFn(() => new Date()),
 });
 
 export const rooms = pgTable('rooms', {
@@ -37,7 +37,7 @@ export const rooms = pgTable('rooms', {
     .notNull()
     .references(() => users.id),
   createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdateFn(() => new Date()),
 });
 
 export const roomParticipants = pgTable(
