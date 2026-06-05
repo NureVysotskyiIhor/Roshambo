@@ -34,3 +34,7 @@ FRONTEND_URL=http://localhost:5173
   ## WS Packages
 @nestjs/websockets, @nestjs/platform-socket.io, socket.io 
 installed in TASK_03a (required for WS type imports)
+
+## Known Issues
+- db/index.ts requires `import 'dotenv/config'` at top level because 
+  pg.Pool is created before NestJS ConfigModule loads .env
