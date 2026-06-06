@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module.js';
 import { validateEnv } from './config/env.validation.js';
 import { SharedModule } from './shared/shared.module.js';
+import { RoomsModule } from './rooms/rooms.module.js';
 import { UsersModule } from './users/users.module.js';
 
 @Module({
@@ -11,6 +12,7 @@ import { UsersModule } from './users/users.module.js';
     SharedModule,
     AuthModule,
     UsersModule,
+    RoomsModule,
   ],
 })
 export class AppModule {}
