@@ -53,6 +53,20 @@ All inferred Drizzle types live in backend/src/db/types.ts:
 Import from '../db/types' in all repositories — never redefine locally.
 updatedAt is handled automatically via $onUpdateFn in schema (users, rooms tables).
 
+## Database Types (backend/src/db/types.ts)
+
+Select types (full DB records — use in repositories and services):
+- UserRecord, RoomRecord, RoomParticipantRecord, RoundRecord
+
+Insert types (internal Drizzle use only — use as base for Pick<> in repositories):
+- UserInsert, RoomInsert, RoomParticipantInsert, RoundInsert
+
+Rules:
+- NEVER redefine Select types locally — always import from db/types
+- NEVER use Insert types directly as repository method params
+- Each repository defines its own strict CreateXxxData via Pick<XxxInsert>
+- DTO and repository types are ALWAYS separate — different layers, different contracts
+
 ## Game Store (in-memory)
 Located in game/game.store.ts
 Stores active round choices: roomCode → { playerOneChoice, playerTwoChoice }

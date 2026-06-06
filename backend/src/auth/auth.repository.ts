@@ -2,15 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { users } from '../db/schema.js';
-import { UserRecord } from '../db/types.js';
+import { UserInsert, UserRecord } from '../db/types.js';
 
 export type { UserRecord };
 
-type CreateUserData = {
-  username: string;
-  password: string;
+type CreateUserData = Pick<UserInsert, 'username' | 'password' | 'avatarUrl'> & {
   email?: string;
-  avatarUrl: string;
   role?: 'guest' | 'registered';
 };
 

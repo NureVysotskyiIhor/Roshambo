@@ -62,7 +62,7 @@ export class AuthService {
     return { user, tokens };
   }
 
-  generateTokens(userId: string, username: string): Tokens {
+  private generateTokens(userId: string, username: string): Tokens {
     const payload = { sub: userId, username };
     const accessToken = this.jwtService.sign(payload, {
       secret: this.configService.get<string>('JWT_ACCESS_SECRET')!,
