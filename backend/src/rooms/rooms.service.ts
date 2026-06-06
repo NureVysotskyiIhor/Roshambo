@@ -1,5 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { nanoid } from 'nanoid';
+import type { RoomParticipantRecord } from '../db/types.js';
 import { CreateRoomDto } from './dto/create-room.dto.js';
 import { RoomResponseDto } from './dto/room-response.dto.js';
 import { UpdateRoomDto } from './dto/update-room.dto.js';
@@ -49,5 +50,18 @@ export class RoomsService {
 
     const updatedRoom = await this.repository.updateName(room.id, dto.name);
     return this.mapper.toResponse(updatedRoom);
+  }
+
+  async findByCode(code: string): Promise<RoomResponseDto | null> {
+    const room = await this.repository.findByCode(code);
+    return room ? this.mapper.toResponse(room) : null;
+  }
+
+  async updateStatus(roomId: string, status: 'waiting' | 'in_progress' | 'finished'): Promise<void> {
+    await this.repository.updateStatus(roomId, status);
+  }
+
+  findParticipants(roomId: string): Promise<RoomParticipantRecord[]> {
+    return this.repository.findParticipants(roomId);
   }
 }
