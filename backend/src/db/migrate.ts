@@ -11,7 +11,6 @@ const db = drizzle(pool);
 
 migrate(db, { migrationsFolder: './drizzle' })
   .then(() => {
-    console.log('Migrations applied successfully');
     return pool.end();
   })
   .catch((err: unknown) => {

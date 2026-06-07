@@ -83,17 +83,14 @@ export class AppGateway implements OnGatewayDisconnect, OnGatewayInit {
       await this.roomsService.setParticipantLeft(room.id, user.id);
 
       const participants = await this.roomsService.findParticipants(room.id);
-      console.log('participants', participants);
       const activeOpponent = participants.find(
         (p) => p.userId !== room.creatorId && p.leftAt === null,
       );
-      console.log('activeOpponent', activeOpponent);
       if (activeOpponent) {
         await this.roomsService.setParticipantLeft(room.id, activeOpponent.userId);
       }
 
       await this.roomsService.updateStatus(room.id, 'finished');
-      console.log('updateStatus finished', Date.now());
       this.gameService.resetRound(roomCode);
       this.gameService.resetSessionScores(roomCode);
       this.server

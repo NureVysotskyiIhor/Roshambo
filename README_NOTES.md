@@ -42,3 +42,8 @@ installed in TASK_03a (required for WS type imports)
   ## DB Types
 All Drizzle inferred types centralized in backend/src/db/types.ts
 updatedAt handled automatically via $onUpdateFn in schema
+
+## Profile Page
+Profile editing endpoint (PATCH /users/me) is fully implemented on backend.
+Frontend profile page was not completed due to time constraints.
+Mentioned in Future Improvements.

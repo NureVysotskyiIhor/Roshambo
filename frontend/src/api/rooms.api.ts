@@ -3,10 +3,8 @@ import type { RoomResponseDto, ParticipantDto } from '@roshambo/shared'
 
 export const roomsApi = {
 getMyRoom: (): Promise<RoomResponseDto> => {
-  console.log('getMyRoom called')
     return apiClient.get<{ room: RoomResponseDto }>('/rooms/my')
     .then((r) => {
-      console.log('getMyRoom response', r.data.room)
       return r.data.room
     })
 },

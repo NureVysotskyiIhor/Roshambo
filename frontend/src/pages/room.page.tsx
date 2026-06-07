@@ -10,10 +10,10 @@ import { roomKeys } from '../queries/rooms.queries'
 import { Loader } from '../components/ui/loader.component'
 import { PATHS } from '../routes/paths'
 import { PlayerColumn } from '../components/game/player-column.component'
-import { ChoiceCard } from '../components/game/choice-card.component'
-import { ChoiceSymbol } from '../components/game/choice-symbol.component'
+import { ChoicePicker } from '../components/game/choice-picker.component'
 import { OpponentCard } from '../components/game/opponent-card.component'
 import { ScoreCircle } from '../components/game/score-circle.component'
+import { PostRoundActions } from '../components/game/post-round-actions.component'
 import { useGameSocket } from '../hooks/use-game-socket.hook'
 import { useGameState } from '../hooks/use-game-state.hook'
 import { useGameActions } from '../hooks/use-game-actions.hook'
@@ -56,8 +56,6 @@ export function RoomPage() {
     opponentStatusText,
     showCards,
     showResult,
-    otherChoices,
-    CHOICES,
   } = useGameState({ myId, room, opponentDisconnected })
 
   const { handleChoice, handlePlayAgain, handleExit, waitingForRestart, setWaitingForRestart } =
@@ -186,48 +184,14 @@ export function RoomPage() {
             gap: 12,
           }}
         >
-          {showResult && myRoundChoice ? (
-            <ChoiceSymbol choice={myRoundChoice} size="lg" />
-          ) : showCards ? (
-            myChoice ? (
-              <>
-                <ChoiceCard
-                  choice={myChoice}
-                  index={CHOICES.indexOf(myChoice) + 1}
-                  isSelected
-                  isLarge
-                  onClick={() => handleChoice(myChoice)}
-                  disabled={opponentChose}
-                />
-                <div style={{ display: 'flex', gap: 12 }}>
-                  {otherChoices.map((c) => (
-                    <ChoiceCard
-                      key={c}
-                      choice={c}
-                      index={CHOICES.indexOf(c) + 1}
-                      isSelected={false}
-                      isLarge={false}
-                      onClick={() => handleChoice(c)}
-                      disabled={opponentChose}
-                    />
-                  ))}
-                </div>
-              </>
-            ) : (
-              <div style={{ display: 'flex', gap: 12 }}>
-                {CHOICES.map((c) => (
-                  <ChoiceCard
-                    key={c}
-                    choice={c}
-                    index={CHOICES.indexOf(c) + 1}
-                    isSelected={false}
-                    isLarge={false}
-                    onClick={() => handleChoice(c)}
-                  />
-                ))}
-              </div>
-            )
-          ) : null}
+          <ChoicePicker
+            myChoice={myChoice}
+            myRoundChoice={myRoundChoice}
+            showResult={showResult}
+            showCards={showCards}
+            onChoose={handleChoice}
+            disabled={opponentChose}
+          />
         </div>
 
         <p
@@ -290,54 +254,11 @@ export function RoomPage() {
 
       {/* Bottom center buttons — shown after result or disconnect */}
       {showResult && (
-        <div
-          style={{
-            position: 'absolute',
-            bottom: 40,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            display: 'flex',
-            gap: 12,
-            zIndex: 10,
-          }}
-        >
-          <button
-            onClick={handlePlayAgain}
-            disabled={waitingForRestart}
-            style={{
-              backgroundColor: waitingForRestart
-                ? 'rgba(108, 99, 255, 0.5)'
-                : 'var(--color-primary)',
-              color: 'white',
-              border: 'none',
-              borderRadius: 8,
-              padding: '10px 20px',
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: waitingForRestart ? 'not-allowed' : 'pointer',
-              fontFamily: 'var(--font-sans)',
-              transition: 'background-color 0.15s',
-            }}
-          >
-            {waitingForRestart ? 'Waiting...' : 'Play again'}
-          </button>
-          <button
-            onClick={handleExit}
-            style={{
-              backgroundColor: 'rgba(255, 255, 255, 0.08)',
-              border: '1px solid var(--color-border)',
-              color: 'var(--color-text)',
-              borderRadius: 8,
-              padding: '10px 20px',
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: 'pointer',
-              fontFamily: 'var(--font-sans)',
-            }}
-          >
-            To lobby
-          </button>
-        </div>
+        <PostRoundActions
+          onPlayAgain={handlePlayAgain}
+          onExit={handleExit}
+          waitingForRestart={waitingForRestart}
+        />
       )}
     </div>
   )
