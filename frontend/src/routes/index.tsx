@@ -2,6 +2,7 @@ import { createRouter, createRootRoute, createRoute, redirect } from '@tanstack/
 import { RootLayout } from '../components/shared/root-layout.component'
 import { LoginPage } from '../pages/login.page'
 import { RegisterPage } from '../pages/register.page'
+import { RoomsNewPage } from '../pages/rooms-new.page'
 import { authStore } from '../store/auth.store'
 import { PATHS } from './paths'
 
@@ -38,12 +39,28 @@ const registerRoute = createRoute({
 const roomsNewRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: PATHS.ROOMS_NEW,
-  component: () => null,
+  beforeLoad: () => {
+    if (!authStore.getState().user) throw redirect({ to: PATHS.LOGIN })
+  },
+  component: RoomsNewPage,
 })
 
 const profileRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: PATHS.PROFILE,
+  beforeLoad: () => {
+    if (!authStore.getState().user) throw redirect({ to: PATHS.LOGIN })
+  },
+  component: () => null,
+})
+
+// Stub — real implementation in TASK_12
+const roomRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/rooms/$code',
+  beforeLoad: () => {
+    if (!authStore.getState().user) throw redirect({ to: PATHS.LOGIN })
+  },
   component: () => null,
 })
 
@@ -53,6 +70,7 @@ export const routeTree = rootRoute.addChildren([
   registerRoute,
   roomsNewRoute,
   profileRoute,
+  roomRoute,
 ])
 
 export const router = createRouter({ routeTree })

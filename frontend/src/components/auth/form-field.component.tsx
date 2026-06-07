@@ -1,5 +1,5 @@
 import { forwardRef } from 'react'
-import type { InputHTMLAttributes, ReactNode } from 'react'
+import type { CSSProperties, InputHTMLAttributes, ReactNode } from 'react'
 
 interface FormFieldProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string
@@ -7,10 +7,11 @@ interface FormFieldProps extends InputHTMLAttributes<HTMLInputElement> {
   icon: ReactNode
   rightElement?: ReactNode
   error?: boolean
+  inputStyle?: CSSProperties
 }
 
 export const FormField = forwardRef<HTMLInputElement, FormFieldProps>(
-  ({ label, labelRight, icon, rightElement, error, ...inputProps }, ref) => {
+  ({ label, labelRight, icon, rightElement, error, inputStyle, ...inputProps }, ref) => {
     return (
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center justify-between">
@@ -49,6 +50,7 @@ export const FormField = forwardRef<HTMLInputElement, FormFieldProps>(
               outline: 'none',
               boxSizing: 'border-box',
               fontFamily: 'var(--font-sans)',
+              ...inputStyle,
             }}
             onFocus={(e) => {
               e.target.style.borderColor = error ? 'var(--color-lose)' : 'var(--color-primary)'

@@ -47,7 +47,6 @@ export class AppGateway implements OnGatewayDisconnect {
     this.restartRequests.delete(roomCode);
 
     if (user.id === room.creatorId) {
-      await this.roomsService.updateStatus(room.id, 'finished');
       await this.gameService.resetScores(roomCode);
       this.gameService.resetRound(roomCode);
       this.server.to(roomCode).emit(EVENTS.ROOM.CLOSED, { reason: 'host_disconnected' });

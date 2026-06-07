@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { and, eq, or } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { roomParticipants, rooms } from '../db/schema.js';
 import type {
@@ -18,13 +18,11 @@ export class RoomsRepository {
       .then((row) => row ?? null);
   }
 
-  findActiveByCreatorId(creatorId: string): Promise<RoomRecord | null> {
+  findByCreatorId(creatorId: string): Promise<RoomRecord | null> {
     return db.query.rooms
       .findFirst({
-        where: and(
-          eq(rooms.creatorId, creatorId),
-          or(eq(rooms.status, 'waiting'), eq(rooms.status, 'in_progress')),
-        ),
+        where: eq(rooms.creatorId, creatorId),
+        orderBy: (rooms, { desc }) => [desc(rooms.createdAt)],
       })
       .then((row) => row ?? null);
   }

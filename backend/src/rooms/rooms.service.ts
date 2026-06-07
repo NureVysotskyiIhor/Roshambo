@@ -15,8 +15,12 @@ export class RoomsService {
   ) {}
 
   async getMyRoom(userId: string): Promise<RoomResponseDto | null> {
-    const room = await this.repository.findActiveByCreatorId(userId);
+    const room = await this.repository.findByCreatorId(userId);
     if (!room) return null;
+    if (room.status === 'finished') {
+      const updated = await this.repository.updateStatus(room.id, 'waiting');
+      return this.mapper.toResponse(updated);
+    }
     return this.mapper.toResponse(room);
   }
 

@@ -3,7 +3,7 @@ import type { RoomResponseDto } from '@roshambo/shared'
 
 export const roomsApi = {
   getMyRoom: (): Promise<RoomResponseDto> =>
-    apiClient.get<RoomResponseDto>('/rooms/my').then((r) => r.data),
+    apiClient.get<{ room: RoomResponseDto }>('/rooms/my').then((r) => r.data.room),
 
   createRoom: (data: { name?: string }): Promise<RoomResponseDto> =>
     apiClient.post<RoomResponseDto>('/rooms', data).then((r) => r.data),
