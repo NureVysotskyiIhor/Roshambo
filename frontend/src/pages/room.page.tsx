@@ -2,11 +2,6 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { EVENTS } from '@roshambo/shared'
-import type { Choice, RoundResultPayload } from '@roshambo/shared'
-import { socket } from '../socket/socket.client'
-import { gameSocket } from '../socket/game.socket'
-import { roomSocket } from '../socket/room.socket'
 import { authStore } from '../store/auth.store'
 import { roomStore } from '../store/room.store'
 import { gameStore } from '../store/game.store'
@@ -19,16 +14,9 @@ import { ChoiceCard } from '../components/game/choice-card.component'
 import { ChoiceSymbol } from '../components/game/choice-symbol.component'
 import { OpponentCard } from '../components/game/opponent-card.component'
 import { ScoreCircle } from '../components/game/score-circle.component'
-import { queryClient } from '../lib/query-client'
-
-const CHOICES: Choice[] = ['rock', 'paper', 'scissors']
-
-const LEAVE_REASON_MESSAGES: Record<string, string> = {
-  host_left: 'Host left the room',
-  host_disconnected: 'Host disconnected',
-  opponent_left: 'Opponent left the room',
-  opponent_disconnected: 'Opponent disconnected',
-}
+import { useGameSocket } from '../hooks/use-game-socket.hook'
+import { useGameState } from '../hooks/use-game-state.hook'
+import { useGameActions } from '../hooks/use-game-actions.hook'
 
 export function RoomPage() {
   const navigate = useNavigate()
@@ -45,45 +33,47 @@ export function RoomPage() {
   })
   const room = storeRoom ?? fetchedRoom ?? null
 
-  // Opponent derived from store participants (set before navigating here,
-  // or fetched below if the user landed here directly)
-  const participants = roomStore((s) => s.participants)
-  const opponent = participants.find((p) => p.userId !== myId)
-  const opponentId = opponent?.userId
-  const opponentUsername = opponent?.username ?? 'Opponent'
-  const opponentAvatarUrl = opponent?.avatarUrl ?? ''
-
-  // Game state
-  const gameStatus = gameStore((s) => s.status)
-  const myChoice = gameStore((s) => s.myChoice)
-  const opponentChose = gameStore((s) => s.opponentChose)
-  const roundResult = gameStore((s) => s.roundResult)
-  const sessionScores = gameStore((s) => s.sessionScores)
-
   const [opponentDisconnected, setOpponentDisconnected] = useState(false)
-  const [waitingForRestart, setWaitingForRestart] = useState(false)
 
-  const myScore = sessionScores[myId ?? ''] ?? 0
-  const opponentScore = sessionScores[opponentId ?? ''] ?? 0
-  const roundNumber = myScore + opponentScore + 1
+  const {
+    opponentUsername,
+    opponentAvatarUrl,
+    myChoice,
+    opponentChose,
+    myScore,
+    opponentScore,
+    roundNumber,
+    myRoundChoice,
+    opponentRoundChoice,
+    resultLabel,
+    myBadgeVariant,
+    myBadgeText,
+    opponentBadgeVariant,
+    opponentBadgeText,
+    opponentCardState,
+    circleGameState,
+    myStatusText,
+    opponentStatusText,
+    showCards,
+    showResult,
+    otherChoices,
+    CHOICES,
+  } = useGameState({ myId, room, opponentDisconnected })
 
-  // Connect socket + join room on mount
-  useEffect(() => {
-    if (!socket.connected) socket.connect()
-    socket.emit(EVENTS.ROOM.JOIN, { code })
-  }, [code])
+  const { handleChoice, handlePlayAgain, handleExit, waitingForRestart, setWaitingForRestart } =
+    useGameActions({
+      roomCode: room?.code,
+      navigate,
+    })
 
-  // Re-join the room after a socket reconnect (e.g. network blip) so the
-  // server resyncs Socket.IO room membership for this client
-  useEffect(() => {
-    const handleReconnect = () => {
-      socket.emit(EVENTS.ROOM.JOIN, { code })
-    }
-    socket.io.on('reconnect', handleReconnect)
-    return () => {
-      socket.io.off('reconnect', handleReconnect)
-    }
-  }, [code])
+  useGameSocket({
+    roomCode: code,
+    myId,
+    navigate,
+    onOpponentDisconnected: () => setOpponentDisconnected(true),
+    onOpponentReconnected: () => setOpponentDisconnected(false),
+    onWaitingForRestart: setWaitingForRestart,
+  })
 
   // Always fetch participants on mount to ensure fresh, accurate data
   useEffect(() => {
@@ -111,102 +101,6 @@ export function RoomPage() {
     }
   }, [room?.status])
 
-  // Socket event listeners
-  useEffect(() => {
-    const offStarted = gameSocket.onStarted(() => {
-      gameStore.getState().resetRound()
-      setWaitingForRestart(false)
-    })
-
-    const offOpponentChose = gameSocket.onOpponentChose(() => {
-      gameStore.getState().setOpponentChose(true)
-    })
-
-    const offRoundResult = gameSocket.onRoundResult((result: RoundResultPayload) => {
-      gameStore.getState().setRoundResult(result)
-      gameStore.getState().setSessionScores(result.scores)
-    })
-
-    const offScoreUpdated = gameSocket.onScoreUpdated((data) => {
-      gameStore.getState().setSessionScores(data.scores)
-    })
-
-    const offRestartRequested = gameSocket.onRestartRequested((data) => {
-      gameStore.getState().setRestartRequestedBy(data.requestedBy)
-    })
-
-    const offPlayerJoined = roomSocket.onPlayerJoined((data) => {
-      setOpponentDisconnected(false)
-      roomStore.getState().upsertParticipant(data.participant)
-    })
-
-    const offOpponentLeft = roomSocket.onOpponentLeft((data) => {
-      setOpponentDisconnected(true)
-      const remaining = roomStore.getState().participants.filter((p) => p.userId === myId)
-      roomStore.getState().setParticipants(remaining)
-      gameStore.getState().resetSessionScores()
-      toast.info(LEAVE_REASON_MESSAGES[data.reason] ?? 'Opponent disconnected')
-    })
-
-    const offClosed = roomSocket.onClosed((data) => {
-      console.log('onClosed fired', data)
-      toast.info(LEAVE_REASON_MESSAGES[data.reason] ?? 'Host disconnected')
-      socket.disconnect()
-      roomStore.getState().clearRoom()
-      gameStore.getState().resetAll()
-      queryClient.removeQueries({ queryKey: roomKeys.my() })
-      void navigate({ to: PATHS.ROOMS_NEW })
-    })
-
-    const handleError = (data: { message: string }) => {
-      toast.error(data?.message ?? 'Socket error')
-    }
-    socket.on(EVENTS.ERROR, handleError)
-
-    return () => {
-      offStarted()
-      offOpponentChose()
-      offRoundResult()
-      offScoreUpdated()
-      offRestartRequested()
-      offPlayerJoined()
-      offOpponentLeft()
-      offClosed()
-      socket.off(EVENTS.ERROR, handleError)
-    }
-  }, [navigate, myId])
-
-  const handleChoice = (choice: Choice) => {
-    const state = gameStore.getState()
-    if (state.myChoice && state.opponentChose) return
-    gameStore.getState().setMyChoice(choice)
-    gameSocket.makeChoice(choice)
-    gameStore.getState().setStatus('waiting_opponent')
-  }
-
-  const handlePlayAgain = () => {
-    if (waitingForRestart) return
-    setWaitingForRestart(true)
-    gameSocket.requestRestart()
-  }
-
-  const handleExit = () => {
-    const finish = () => {
-      socket.disconnect()
-      roomStore.getState().clearRoom()
-      gameStore.getState().resetAll()
-      queryClient.removeQueries({ queryKey: roomKeys.my() })
-      void navigate({ to: PATHS.ROOMS_NEW })
-    }
-
-    const timeout = setTimeout(finish, 3000)
-
-    socket.emit(EVENTS.ROOM.LEFT, {}, async  () => {
-      clearTimeout(timeout)
-      finish()
-    })
-  }
-
   if (isLoading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
@@ -219,85 +113,6 @@ export function RoomPage() {
     void navigate({ to: PATHS.ROOMS_NEW })
     return null
   }
-
-  // Derived choices from round result
-  const myRoundChoice: Choice | null = roundResult
-    ? roundResult.playerOneId === myId
-      ? roundResult.playerOneChoice
-      : roundResult.playerTwoChoice
-    : null
-
-  const opponentRoundChoice: Choice | null = roundResult
-    ? roundResult.playerOneId === myId
-      ? roundResult.playerTwoChoice
-      : roundResult.playerOneChoice
-    : null
-
-  // Result label for score circle
-  let resultLabel: 'VICTORY' | 'DEFEAT' | 'DRAW' | 'FINAL' | undefined
-  if (opponentDisconnected) {
-    resultLabel = 'FINAL'
-  } else if (roundResult) {
-    if (roundResult.isDraw) resultLabel = 'DRAW'
-    else if (roundResult.winnerId === myId) resultLabel = 'VICTORY'
-    else resultLabel = 'DEFEAT'
-  }
-
-  // Badge logic
-  const myBadgeVariant = myChoice ? 'ready' : 'choosing'
-  const myBadgeText = myChoice ? 'Ready' : 'Your turn'
-
-  let opponentBadgeVariant: 'ready' | 'choosing' | 'waiting' | 'disconnected'
-  let opponentBadgeText: string
-  if (opponentDisconnected) {
-    opponentBadgeVariant = 'disconnected'
-    opponentBadgeText = 'Disconnected'
-  } else if (opponentChose || roundResult) {
-    opponentBadgeVariant = 'ready'
-    opponentBadgeText = 'Ready'
-  } else {
-    opponentBadgeVariant = 'waiting'
-    opponentBadgeText = 'Choosing...'
-  }
-
-  // Opponent card state
-  let opponentCardState: 'waiting' | 'chosen' | 'revealed'
-  if (roundResult && opponentRoundChoice) {
-    opponentCardState = 'revealed'
-  } else if (opponentChose) {
-    opponentCardState = 'chosen'
-  } else {
-    opponentCardState = 'waiting'
-  }
-
-  // Score circle game state
-  const circleGameState: 'playing' | 'round_result' | 'disconnected' =
-    opponentDisconnected ? 'disconnected' : roundResult ? 'round_result' : 'playing'
-
-  // Status text
-  let myStatusText: string
-  if (roundResult && myRoundChoice) {
-    myStatusText = myRoundChoice.charAt(0).toUpperCase() + myRoundChoice.slice(1)
-  } else if (myChoice) {
-    myStatusText = 'Your choice is made'
-  } else {
-    myStatusText = 'Choose your move'
-  }
-
-  let opponentStatusText: string
-  if (opponentDisconnected) {
-    opponentStatusText = 'Left the game'
-  } else if (roundResult && opponentRoundChoice) {
-    opponentStatusText = opponentRoundChoice.charAt(0).toUpperCase() + opponentRoundChoice.slice(1)
-  } else if (opponentChose) {
-    opponentStatusText = 'Ready for round'
-  } else {
-    opponentStatusText = 'Making a choice...'
-  }
-
-  const showCards = gameStatus === 'choosing' || gameStatus === 'waiting_opponent'
-  const showResult = roundResult !== null || opponentDisconnected
-  const otherChoices = CHOICES.filter((c) => c !== myChoice)
 
   return (
     <div

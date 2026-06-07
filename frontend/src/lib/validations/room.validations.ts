@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 export const createRoomSchema = z.object({
-  name: z.string().max(100).optional(),
+  name: z.string().max(50, 'Room name must be at most 50 characters').optional(),
 })
 
 export const joinRoomSchema = z.object({

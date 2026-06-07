@@ -5,11 +5,12 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { DoorOpen, Hash } from 'lucide-react'
 import { toast } from 'sonner'
 import { EVENTS } from '@roshambo/shared'
-import type { RoomResponseDto, ParticipantDto } from '@roshambo/shared'
+import type { RoomResponseDto } from '@roshambo/shared'
 import { useMyRoom, useCreateRoom, useJoinRoom } from '../queries/rooms.queries'
 import { socket } from '../socket/socket.client'
 import { roomStore } from '../store/room.store'
 import { authStore } from '../store/auth.store'
+import { useRoomSocket, STATUS_BADGES } from '../hooks/use-room-socket.hook'
 import { Loader } from '../components/ui/loader.component'
 import { Logo } from '../components/shared/logo.component'
 import { FormField } from '../components/auth/form-field.component'
@@ -29,30 +30,6 @@ import {
 import { parseError } from '../lib/parse-error'
 
 type ActiveTab = 'create' | 'join'
-
-const STATUS_BADGES: Record<
-  RoomResponseDto['status'],
-  { label: string; color: string; background: string; border: string }
-> = {
-  waiting: {
-    label: 'Waiting',
-    color: 'var(--color-draw)',
-    background: 'rgba(245, 158, 11, 0.15)',
-    border: '1px solid rgba(245, 158, 11, 0.4)',
-  },
-  in_progress: {
-    label: 'In progress',
-    color: 'var(--color-scissors)',
-    background: 'rgba(34, 197, 94, 0.15)',
-    border: '1px solid rgba(34, 197, 94, 0.4)',
-  },
-  finished: {
-    label: 'Finished',
-    color: 'var(--color-text-muted)',
-    background: 'rgba(255, 255, 255, 0.06)',
-    border: '1px solid var(--color-border)',
-  },
-}
 
 export function RoomsNewPage() {
   const navigate = useNavigate()
@@ -130,56 +107,18 @@ export function RoomsNewPage() {
     }
   }
 
-  // Connect socket when existing room found on mount
-  useEffect(() => {
-    if (existingRoom && !sessionRoom) {
-      socket.connect()
-      socket.emit(EVENTS.ROOM.JOIN, { code: existingRoom.code })
-    }
-  }, [existingRoom, sessionRoom])
-
-  // Socket listeners — set up and cleaned up when in waiting state
-  useEffect(() => {
-    if (pageState !== 'waiting' || !currentRoom) return
-
-    const handleJoined = (data: { room: RoomResponseDto; participant: ParticipantDto }) => {
-      roomStore.getState().setRoom(data.room)
-      roomStore.getState().addParticipant(data.participant)
-      if (data.room.status === 'in_progress') {
-        navigatedToGame.current = true
-        void navigate({ to: '/rooms/$code', params: { code: data.room.code } })
-      }
-    }
-
-    const handlePlayerJoined = (data: { participant: ParticipantDto }) => {
-      navigatedToGame.current = true
-      roomStore.getState().upsertParticipant(data.participant)
-      void navigate({ to: '/rooms/$code', params: { code: currentRoom.code } })
-    }
-
-    const handleOpponentLeft = () => {
-      const participants = roomStore.getState().participants
-      const opponent = participants.find((p) => p.userId !== user?.id)
-      setOpponentName(opponent?.username ?? '')
+  useRoomSocket({
+    existingRoom,
+    sessionRoom,
+    navigate,
+    onOpponentLeft: (name) => {
+      setOpponentName(name)
       setOpponentLeft(true)
-    }
-
-    const handleError = (data: { message: string }) => {
-      toast.error(data?.message ?? 'Socket error')
-    }
-
-    socket.on(EVENTS.ROOM.JOINED, handleJoined)
-    socket.on(EVENTS.ROOM.PLAYER_JOINED, handlePlayerJoined)
-    socket.on(EVENTS.ROOM.OPPONENT_LEFT, handleOpponentLeft)
-    socket.on(EVENTS.ERROR, handleError)
-
-    return () => {
-      socket.off(EVENTS.ROOM.JOINED, handleJoined)
-      socket.off(EVENTS.ROOM.PLAYER_JOINED, handlePlayerJoined)
-      socket.off(EVENTS.ROOM.OPPONENT_LEFT, handleOpponentLeft)
-      socket.off(EVENTS.ERROR, handleError)
-    }
-  }, [pageState, currentRoom, navigate, user?.id])
+    },
+    markNavigatedToGame: () => {
+      navigatedToGame.current = true
+    },
+  })
 
   // Disconnect socket on unmount only if we did NOT navigate to game room
   useEffect(() => {
@@ -380,6 +319,7 @@ export function RoomsNewPage() {
               labelRight={<span style={{ fontSize: 11 }}>Optional</span>}
               icon={<DoorOpen size={16} />}
               placeholder="Evening rematch"
+              maxLength={50}
               error={!!createForm.formState.errors.name}
               disabled={createRoom.isPending}
               {...createForm.register('name')}
