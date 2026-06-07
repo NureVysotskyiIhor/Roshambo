@@ -1,17 +1,20 @@
-import { Avatar } from '../ui/avatar.component'
+import { Avatar } from '../ui/avatar.component';
 
 interface PlayerColumnProps {
-  username: string
-  avatarUrl: string
-  badgeVariant: 'ready' | 'choosing' | 'waiting' | 'disconnected'
-  badgeText: string
-  isOpponent?: boolean
-  opacity?: number
+  username: string;
+  avatarUrl: string;
+  badgeVariant: 'ready' | 'choosing' | 'waiting' | 'disconnected';
+  badgeText: string;
+  isOpponent?: boolean;
+  opacity?: number;
 }
 
-type BadgeVariant = PlayerColumnProps['badgeVariant']
+type BadgeVariant = PlayerColumnProps['badgeVariant'];
 
-const BADGE_STYLE: Record<BadgeVariant, { backgroundColor: string; border: string; color: string }> = {
+const BADGE_STYLE: Record<
+  BadgeVariant,
+  { backgroundColor: string; border: string; color: string }
+> = {
   ready: {
     backgroundColor: 'rgba(34, 197, 94, 0.15)',
     border: '1px solid rgba(34, 197, 94, 0.4)',
@@ -32,14 +35,14 @@ const BADGE_STYLE: Record<BadgeVariant, { backgroundColor: string; border: strin
     border: '1px solid rgba(239, 68, 68, 0.3)',
     color: 'rgba(239, 68, 68, 0.7)',
   },
-}
+};
 
 const DOT_COLOR: Record<BadgeVariant, string> = {
   ready: 'var(--color-win)',
   choosing: 'var(--color-primary)',
   waiting: 'var(--color-draw)',
   disconnected: 'rgba(239, 68, 68, 0.7)',
-}
+};
 
 export function PlayerColumn({
   username,
@@ -48,8 +51,8 @@ export function PlayerColumn({
   badgeText,
   opacity = 1,
 }: PlayerColumnProps) {
-  const badge = BADGE_STYLE[badgeVariant]
-  const dotColor = DOT_COLOR[badgeVariant]
+  const badge = BADGE_STYLE[badgeVariant];
+  const dotColor = DOT_COLOR[badgeVariant];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', opacity }}>
@@ -80,5 +83,5 @@ export function PlayerColumn({
         <span style={{ fontSize: 13, fontWeight: 500 }}>{badgeText}</span>
       </div>
     </div>
-  )
+  );
 }

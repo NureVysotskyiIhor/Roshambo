@@ -11,8 +11,15 @@ import {
 } from 'drizzle-orm/pg-core';
 
 export const userRoleEnum = pgEnum('user_role', ['guest', 'registered']);
-export const roomStatusEnum = pgEnum('room_status', ['waiting', 'in_progress', 'finished']);
-export const participantRoleEnum = pgEnum('participant_role', ['player', 'spectator']);
+export const roomStatusEnum = pgEnum('room_status', [
+  'waiting',
+  'in_progress',
+  'finished',
+]);
+export const participantRoleEnum = pgEnum('participant_role', [
+  'player',
+  'spectator',
+]);
 export const choiceEnum = pgEnum('choice', ['rock', 'paper', 'scissors']);
 
 export const users = pgTable('users', {
@@ -24,7 +31,10 @@ export const users = pgTable('users', {
   avatarUrl: varchar('avatar_url', { length: 500 }).notNull(),
   role: userRoleEnum('role').notNull().default('registered'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdateFn(() => new Date()),
+  updatedAt: timestamp('updated_at')
+    .notNull()
+    .defaultNow()
+    .$onUpdateFn(() => new Date()),
 });
 
 export const rooms = pgTable('rooms', {
@@ -37,7 +47,10 @@ export const rooms = pgTable('rooms', {
     .notNull()
     .references(() => users.id),
   createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdateFn(() => new Date()),
+  updatedAt: timestamp('updated_at')
+    .notNull()
+    .defaultNow()
+    .$onUpdateFn(() => new Date()),
 });
 
 export const roomParticipants = pgTable(
@@ -57,7 +70,10 @@ export const roomParticipants = pgTable(
   },
   (table) => [
     index('room_participants_room_id_idx').on(table.roomId),
-    uniqueIndex('room_participants_room_id_user_id_idx').on(table.roomId, table.userId),
+    uniqueIndex('room_participants_room_id_user_id_idx').on(
+      table.roomId,
+      table.userId,
+    ),
   ],
 );
 

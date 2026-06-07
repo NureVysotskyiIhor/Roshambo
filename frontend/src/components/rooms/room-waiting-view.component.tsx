@@ -1,25 +1,25 @@
-import type { ReactNode } from 'react'
-import type { RoomResponseDto, UserResponseDto } from '@roshambo/shared'
-import { RoomCodeDisplay } from './room-code-display.component'
-import { CopyButton } from './copy-button.component'
-import { PlayerCard } from './player-card.component'
-import { WaitingIndicator } from './waiting-indicator.component'
-import { WarningBanner } from './warning-banner.component'
+import type { ReactNode } from 'react';
+import type { RoomResponseDto, UserResponseDto } from '@roshambo/shared';
+import { RoomCodeDisplay } from './room-code-display.component';
+import { CopyButton } from './copy-button.component';
+import { PlayerCard } from './player-card.component';
+import { WaitingIndicator } from './waiting-indicator.component';
+import { WarningBanner } from './warning-banner.component';
 
 export interface StatusBadgeView {
-  label: string
-  color: string
-  background: string
-  border: string
+  label: string;
+  color: string;
+  background: string;
+  border: string;
 }
 
 interface RoomWaitingViewProps {
-  room: RoomResponseDto
-  currentUser: UserResponseDto | null
-  opponentLeft: boolean
-  opponentName: string
-  statusBadge: StatusBadgeView
-  tabSwitcher: ReactNode
+  room: RoomResponseDto;
+  currentUser: UserResponseDto | null;
+  opponentLeft: boolean;
+  opponentName: string;
+  statusBadge: StatusBadgeView;
+  tabSwitcher: ReactNode;
 }
 
 export function RoomWaitingView({
@@ -146,5 +146,5 @@ export function RoomWaitingView({
 
       <WaitingIndicator text="Waiting for opponent to join..." />
     </div>
-  )
+  );
 }

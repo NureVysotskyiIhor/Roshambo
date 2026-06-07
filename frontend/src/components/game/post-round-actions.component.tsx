@@ -1,10 +1,14 @@
 interface PostRoundActionsProps {
-  onPlayAgain: () => void
-  onExit: () => void
-  waitingForRestart: boolean
+  onPlayAgain: () => void;
+  onExit: () => void;
+  waitingForRestart: boolean;
 }
 
-export function PostRoundActions({ onPlayAgain, onExit, waitingForRestart }: PostRoundActionsProps) {
+export function PostRoundActions({
+  onPlayAgain,
+  onExit,
+  waitingForRestart,
+}: PostRoundActionsProps) {
   return (
     <div
       style={{
@@ -52,5 +56,5 @@ export function PostRoundActions({ onPlayAgain, onExit, waitingForRestart }: Pos
         To lobby
       </button>
     </div>
-  )
+  );
 }

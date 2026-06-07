@@ -13,11 +13,11 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
   prettierConfig,
-  reactPlugin.configs.flat.recommended,
   {
     plugins: {
-      prettier: prettierPlugin,
+      react: reactPlugin,
       'react-hooks': reactHooksPlugin,
+      prettier: prettierPlugin,
     },
     languageOptions: {
       globals: globals.browser,
@@ -29,6 +29,7 @@ export default tseslint.config(
       react: { version: 'detect' },
     },
     rules: {
+      ...reactPlugin.configs.recommended.rules,
       'prettier/prettier': 'error',
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/no-explicit-any': 'warn',

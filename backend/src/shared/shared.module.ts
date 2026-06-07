@@ -14,7 +14,11 @@ import { JwtStrategy } from './strategies/jwt.strategy.js';
       useFactory: (config: ConfigService) => ({
         secret: config.get<string>('JWT_ACCESS_SECRET')!,
         // ConfigModule validates JWT_ACCESS_EXPIRES_IN is set; cast needed because config.get returns string, not StringValue
-        signOptions: { expiresIn: config.get('JWT_ACCESS_EXPIRES_IN') as unknown as import('ms').StringValue },
+        signOptions: {
+          expiresIn: config.get(
+            'JWT_ACCESS_EXPIRES_IN',
+          ) as import('ms').StringValue,
+        },
       }),
       inject: [ConfigService],
     }),

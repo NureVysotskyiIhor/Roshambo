@@ -1,9 +1,9 @@
-import type { ReactNode } from 'react'
+import type { ReactNode } from 'react';
 
 interface SubmitButtonProps {
-  isLoading: boolean
-  loadingText: string
-  children: ReactNode
+  isLoading: boolean;
+  loadingText: string;
+  children: ReactNode;
 }
 
 export function SubmitButton({ isLoading, loadingText, children }: SubmitButtonProps) {
@@ -30,10 +30,10 @@ export function SubmitButton({ isLoading, loadingText, children }: SubmitButtonP
         fontFamily: 'var(--font-sans)',
       }}
       onMouseEnter={(e) => {
-        if (!isLoading) e.currentTarget.style.backgroundColor = 'var(--color-primary-hover)'
+        if (!isLoading) e.currentTarget.style.backgroundColor = 'var(--color-primary-hover)';
       }}
       onMouseLeave={(e) => {
-        if (!isLoading) e.currentTarget.style.backgroundColor = 'var(--color-primary)'
+        if (!isLoading) e.currentTarget.style.backgroundColor = 'var(--color-primary)';
       }}
     >
       {isLoading ? (
@@ -55,5 +55,5 @@ export function SubmitButton({ isLoading, loadingText, children }: SubmitButtonP
         children
       )}
     </button>
-  )
+  );
 }

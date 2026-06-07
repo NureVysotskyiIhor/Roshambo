@@ -1,6 +1,6 @@
-import * as AvatarPrimitive from '@radix-ui/react-avatar'
-import { cva, type VariantProps } from 'class-variance-authority'
-import { cn } from '../../lib/utils'
+import * as AvatarPrimitive from '@radix-ui/react-avatar';
+import { cva, type VariantProps } from 'class-variance-authority';
+import { cn } from '../../lib/utils';
 
 const avatarVariants = cva('relative flex shrink-0 overflow-hidden rounded-full', {
   variants: {
@@ -13,16 +13,16 @@ const avatarVariants = cva('relative flex shrink-0 overflow-hidden rounded-full'
   defaultVariants: {
     size: 'md',
   },
-})
+});
 
 interface AvatarProps extends VariantProps<typeof avatarVariants> {
-  avatarUrl?: string | null
-  username: string
-  className?: string
+  avatarUrl?: string | null;
+  username: string;
+  className?: string;
 }
 
 export function Avatar({ avatarUrl, username, size, className }: AvatarProps) {
-  const initials = username.slice(0, 2).toUpperCase()
+  const initials = username.slice(0, 2).toUpperCase();
 
   return (
     <AvatarPrimitive.Root className={cn(avatarVariants({ size }), className)}>
@@ -31,9 +31,9 @@ export function Avatar({ avatarUrl, username, size, className }: AvatarProps) {
         alt={username}
         className="h-full w-full object-cover"
       />
-      <AvatarPrimitive.Fallback className="flex h-full w-full items-center justify-center bg-[var(--color-surface)] text-[var(--color-text-muted)] font-medium text-sm border border-[var(--color-border)]">
+      <AvatarPrimitive.Fallback className="flex h-full w-full items-center justify-center bg-surface text-[var(--coltext-text-mutedxt-sm border border-border">
         {initials}
       </AvatarPrimitive.Fallback>
     </AvatarPrimitive.Root>
-  )
+  );
 }

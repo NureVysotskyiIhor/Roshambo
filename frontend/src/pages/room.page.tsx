@@ -1,39 +1,39 @@
-import { useState, useEffect } from 'react'
-import { useNavigate, useParams } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
-import { toast } from 'sonner'
-import { authStore } from '../store/auth.store'
-import { roomStore } from '../store/room.store'
-import { gameStore } from '../store/game.store'
-import { roomsApi } from '../api/rooms.api'
-import { roomKeys } from '../queries/rooms.queries'
-import { Loader } from '../components/ui/loader.component'
-import { PATHS } from '../routes/paths'
-import { PlayerColumn } from '../components/game/player-column.component'
-import { ChoicePicker } from '../components/game/choice-picker.component'
-import { OpponentCard } from '../components/game/opponent-card.component'
-import { ScoreCircle } from '../components/game/score-circle.component'
-import { PostRoundActions } from '../components/game/post-round-actions.component'
-import { useGameSocket } from '../hooks/use-game-socket.hook'
-import { useGameState } from '../hooks/use-game-state.hook'
-import { useGameActions } from '../hooks/use-game-actions.hook'
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from '@tanstack/react-router';
+import { useQuery } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { authStore } from '../store/auth.store';
+import { roomStore } from '../store/room.store';
+import { gameStore } from '../store/game.store';
+import { roomsApi } from '../api/rooms.api';
+import { roomKeys } from '../queries/rooms.queries';
+import { Loader } from '../components/ui/loader.component';
+import { PATHS } from '../routes/paths';
+import { PlayerColumn } from '../components/game/player-column.component';
+import { ChoicePicker } from '../components/game/choice-picker.component';
+import { OpponentCard } from '../components/game/opponent-card.component';
+import { ScoreCircle } from '../components/game/score-circle.component';
+import { PostRoundActions } from '../components/game/post-round-actions.component';
+import { useGameSocket } from '../hooks/use-game-socket.hook';
+import { useGameState } from '../hooks/use-game-state.hook';
+import { useGameActions } from '../hooks/use-game-actions.hook';
 
 export function RoomPage() {
-  const navigate = useNavigate()
-  const { code } = useParams({ from: '/rooms/$code' })
+  const navigate = useNavigate();
+  const { code } = useParams({ from: '/rooms/$code' });
 
-  const myUser = authStore((s) => s.user)
-  const myId = myUser?.id
+  const myUser = authStore((s) => s.user);
+  const myId = myUser?.id;
 
-  const storeRoom = roomStore((s) => s.room)
+  const storeRoom = roomStore((s) => s.room);
   const { data: fetchedRoom, isLoading } = useQuery({
     queryKey: roomKeys.my(),
     queryFn: roomsApi.getMyRoom,
     enabled: !storeRoom,
-  })
-  const room = storeRoom ?? fetchedRoom ?? null
+  });
+  const room = storeRoom ?? fetchedRoom ?? null;
 
-  const [opponentDisconnected, setOpponentDisconnected] = useState(false)
+  const [opponentDisconnected, setOpponentDisconnected] = useState(false);
 
   const {
     opponentUsername,
@@ -56,13 +56,13 @@ export function RoomPage() {
     opponentStatusText,
     showCards,
     showResult,
-  } = useGameState({ myId, room, opponentDisconnected })
+  } = useGameState({ myId, room, opponentDisconnected });
 
   const { handleChoice, handlePlayAgain, handleExit, waitingForRestart, setWaitingForRestart } =
     useGameActions({
       roomCode: room?.code,
       navigate,
-    })
+    });
 
   useGameSocket({
     roomCode: code,
@@ -71,45 +71,52 @@ export function RoomPage() {
     onOpponentDisconnected: () => setOpponentDisconnected(true),
     onOpponentReconnected: () => setOpponentDisconnected(false),
     onWaitingForRestart: setWaitingForRestart,
-  })
+  });
 
   // Always fetch participants on mount to ensure fresh, accurate data
   useEffect(() => {
-    if (!room) return
+    if (!room) return;
     roomsApi
       .getParticipants(room.id)
       .then((fetched) => {
-        roomStore.getState().setParticipants(fetched)
-        const historical: { [userId: string]: number } = {}
+        roomStore.getState().setParticipants(fetched);
+        const historical: { [userId: string]: number } = {};
         fetched.forEach((p) => {
-          historical[p.userId] = p.score
-        })
-        gameStore.getState().setHistoricalScores(historical)
+          historical[p.userId] = p.score;
+        });
+        gameStore.getState().setHistoricalScores(historical);
       })
       .catch(() => {
-        toast.error('Failed to load participants')
-      })
-  }, [room?.id])
+        toast.error('Failed to load participants');
+      });
+  }, [room?.id]);
 
   // When room loads and game is in_progress but status is still idle (creator flow:
   // game:started was emitted before room.page mounted), initialize to 'choosing'
   useEffect(() => {
     if (room?.status === 'in_progress' && gameStore.getState().status === 'idle') {
-      gameStore.getState().setStatus('choosing')
+      gameStore.getState().setStatus('choosing');
     }
-  }, [room?.status])
+  }, [room?.status]);
 
   if (isLoading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '100vh',
+        }}
+      >
         <Loader size="lg" />
       </div>
-    )
+    );
   }
 
   if (!room) {
-    void navigate({ to: PATHS.ROOMS_NEW })
-    return null
+    void navigate({ to: PATHS.ROOMS_NEW });
+    return null;
   }
 
   return (
@@ -228,14 +235,13 @@ export function RoomPage() {
           opacity={opponentDisconnected ? 0.4 : 1}
         />
 
-        <div style={{ marginTop: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div
+          style={{ marginTop: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        >
           {opponentDisconnected ? (
             <span style={{ fontSize: 32, color: 'var(--color-text-muted)' }}>—</span>
           ) : (
-            <OpponentCard
-              state={opponentCardState}
-              choice={opponentRoundChoice ?? undefined}
-            />
+            <OpponentCard state={opponentCardState} choice={opponentRoundChoice ?? undefined} />
           )}
         </div>
 
@@ -261,5 +267,5 @@ export function RoomPage() {
         />
       )}
     </div>
-  )
+  );
 }

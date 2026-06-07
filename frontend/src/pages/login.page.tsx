@@ -1,23 +1,23 @@
-import { useState } from 'react'
-import { Link, useNavigate } from '@tanstack/react-router'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { Eye, EyeOff, Lock, User } from 'lucide-react'
-import { useLogin } from '../queries/auth.queries'
-import { AuthCard } from '../components/auth/auth-card.component'
-import { ErrorBanner } from '../components/auth/error-banner.component'
-import { FormField } from '../components/auth/form-field.component'
-import { SubmitButton } from '../components/auth/submit-button.component'
-import { loginSchema, type LoginFormData } from '../lib/validations/auth.validations'
-import { parseError } from '../lib/parse-error'
-import { PATHS } from '../routes/paths'
+import { useState } from 'react';
+import { Link, useNavigate } from '@tanstack/react-router';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Eye, EyeOff, Lock, User } from 'lucide-react';
+import { useLogin } from '../queries/auth.queries';
+import { AuthCard } from '../components/auth/auth-card.component';
+import { ErrorBanner } from '../components/auth/error-banner.component';
+import { FormField } from '../components/auth/form-field.component';
+import { SubmitButton } from '../components/auth/submit-button.component';
+import { loginSchema, type LoginFormData } from '../lib/validations/auth.validations';
+import { parseError } from '../lib/parse-error';
+import { PATHS } from '../routes/paths';
 
 export function LoginPage() {
-  const navigate = useNavigate()
-  const [showPassword, setShowPassword] = useState(false)
-  const [serverError, setServerError] = useState<string | null>(null)
+  const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
 
-  const login = useLogin()
+  const login = useLogin();
 
   const {
     register,
@@ -25,27 +25,27 @@ export function LoginPage() {
     formState: { errors },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
-  })
+  });
 
-  const hasError = !!serverError || !!errors.password
+  const hasError = !!serverError || !!errors.password;
 
   const onSubmit = (data: LoginFormData) => {
-    setServerError(null)
+    setServerError(null);
     login.mutate(data, {
       onSuccess: () => {
-        void navigate({ to: PATHS.ROOMS_NEW })
+        void navigate({ to: PATHS.ROOMS_NEW });
       },
       onError: (err) => {
-        setServerError(parseError(err))
+        setServerError(parseError(err));
       },
-    })
-  }
+    });
+  };
 
-  const displayError = serverError ?? errors.username?.message ?? errors.password?.message
+  const displayError = serverError ?? errors.username?.message ?? errors.password?.message;
 
   return (
     <AuthCard tagline="Sign in to challenge a friend to a duel.">
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+      <form onSubmit={(e) => { e.preventDefault(); void handleSubmit(onSubmit)(); }} className="flex flex-col gap-4">
         <FormField
           label="Username"
           icon={<User size={16} />}
@@ -90,12 +90,19 @@ export function LoginPage() {
         </SubmitButton>
       </form>
 
-      <p style={{ fontSize: 14, color: 'var(--color-text-muted)', textAlign: 'center', marginTop: 20 }}>
+      <p
+        style={{
+          fontSize: 14,
+          color: 'var(--color-text-muted)',
+          textAlign: 'center',
+          marginTop: 20,
+        }}
+      >
         Don&apos;t have an account?{' '}
         <Link to={PATHS.REGISTER} style={{ color: 'var(--color-primary)' }}>
           Create account
         </Link>
       </p>
     </AuthCard>
-  )
+  );
 }

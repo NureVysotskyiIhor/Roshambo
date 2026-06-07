@@ -1,7 +1,7 @@
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react';
 
 interface WarningBannerProps {
-  message: string
+  message: string;
 }
 
 export function WarningBanner({ message }: WarningBannerProps) {
@@ -22,5 +22,5 @@ export function WarningBanner({ message }: WarningBannerProps) {
       />
       <p style={{ fontSize: 14, color: 'var(--color-draw)', lineHeight: 1.5 }}>{message}</p>
     </div>
-  )
+  );
 }

@@ -1,5 +1,5 @@
 interface RoomCodeDisplayProps {
-  code: string
+  code: string;
 }
 
 export function RoomCodeDisplay({ code }: RoomCodeDisplayProps) {
@@ -37,5 +37,5 @@ export function RoomCodeDisplay({ code }: RoomCodeDisplayProps) {
         ))}
       </div>
     </div>
-  )
+  );
 }

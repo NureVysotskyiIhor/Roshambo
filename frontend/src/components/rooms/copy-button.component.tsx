@@ -1,23 +1,23 @@
-import { useState } from 'react'
-import { Check, Copy } from 'lucide-react'
+import { useState } from 'react';
+import { Check, Copy } from 'lucide-react';
 
 interface CopyButtonProps {
-  text: string
+  text: string;
 }
 
 export function CopyButton({ text }: CopyButtonProps) {
-  const [copied, setCopied] = useState(false)
+  const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(text)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <button
       type="button"
-      onClick={handleCopy}
+      onClick={() => void handleCopy()}
       className="flex items-center"
       style={{
         gap: 8,
@@ -35,5 +35,5 @@ export function CopyButton({ text }: CopyButtonProps) {
       {copied ? <Check size={16} /> : <Copy size={16} />}
       {copied ? 'Copied!' : 'Copy code'}
     </button>
-  )
+  );
 }

@@ -1,5 +1,5 @@
-import { apiClient } from './client'
-import type { UserResponseDto, UpdateUserDto } from '@roshambo/shared'
+import { apiClient } from './client';
+import type { UserResponseDto, UpdateUserDto } from '@roshambo/shared';
 
 export const usersApi = {
   getMe: (): Promise<UserResponseDto> =>
@@ -7,4 +7,4 @@ export const usersApi = {
 
   updateMe: (data: UpdateUserDto): Promise<UserResponseDto> =>
     apiClient.patch<UserResponseDto>('/users/me', data).then((r) => r.data),
-}
+};

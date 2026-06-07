@@ -1,11 +1,11 @@
 interface PlayerCardProps {
-  username: string
-  avatarUrl: string
-  isYou?: boolean
+  username: string;
+  avatarUrl: string;
+  isYou?: boolean;
 }
 
 export function PlayerCard({ username, avatarUrl, isYou }: PlayerCardProps) {
-  const initials = username.slice(0, 2).toUpperCase()
+  const initials = username.slice(0, 2).toUpperCase();
 
   return (
     <div
@@ -72,5 +72,5 @@ export function PlayerCard({ username, avatarUrl, isYou }: PlayerCardProps) {
         <span style={{ fontSize: 12, fontWeight: 500 }}>Online</span>
       </div>
     </div>
-  )
+  );
 }

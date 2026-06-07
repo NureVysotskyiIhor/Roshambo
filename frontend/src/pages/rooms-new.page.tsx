@@ -1,39 +1,39 @@
-import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from '@tanstack/react-router'
-import { EVENTS } from '@roshambo/shared'
-import type { RoomResponseDto } from '@roshambo/shared'
-import { useMyRoom } from '../queries/rooms.queries'
-import { socket } from '../socket/socket.client'
-import { roomStore } from '../store/room.store'
-import { authStore } from '../store/auth.store'
-import { useRoomSocket, STATUS_BADGES } from '../hooks/use-room-socket.hook'
-import { Loader } from '../components/ui/loader.component'
-import { Logo } from '../components/shared/logo.component'
-import { RoomWaitingView } from '../components/rooms/room-waiting-view.component'
-import { CreateRoomForm } from '../components/rooms/create-room-form.component'
-import { JoinRoomForm } from '../components/rooms/join-room-form.component'
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from '@tanstack/react-router';
+import { EVENTS } from '@roshambo/shared';
+import type { RoomResponseDto } from '@roshambo/shared';
+import { useMyRoom } from '../queries/rooms.queries';
+import { socket } from '../socket/socket.client';
+import { roomStore } from '../store/room.store';
+import { authStore } from '../store/auth.store';
+import { useRoomSocket, STATUS_BADGES } from '../hooks/use-room-socket.hook';
+import { Loader } from '../components/ui/loader.component';
+import { Logo } from '../components/shared/logo.component';
+import { RoomWaitingView } from '../components/rooms/room-waiting-view.component';
+import { CreateRoomForm } from '../components/rooms/create-room-form.component';
+import { JoinRoomForm } from '../components/rooms/join-room-form.component';
 
-type ActiveTab = 'create' | 'join'
+type ActiveTab = 'create' | 'join';
 
 export function RoomsNewPage() {
-  const navigate = useNavigate()
-  const user = authStore((s) => s.user)
+  const navigate = useNavigate();
+  const user = authStore((s) => s.user);
 
-  const [sessionRoom, setSessionRoom] = useState<RoomResponseDto | null>(null)
-  const [opponentLeft, setOpponentLeft] = useState(false)
-  const [opponentName, setOpponentName] = useState('')
-  const [activeTab, setActiveTab] = useState<ActiveTab>('create')
-  const navigatedToGame = useRef(false)
+  const [sessionRoom, setSessionRoom] = useState<RoomResponseDto | null>(null);
+  const [opponentLeft, setOpponentLeft] = useState(false);
+  const [opponentName, setOpponentName] = useState('');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('create');
+  const navigatedToGame = useRef(false);
 
-  const { data: existingRoom, isLoading } = useMyRoom()
+  const { data: existingRoom, isLoading } = useMyRoom();
 
-  const currentRoom = sessionRoom ?? existingRoom ?? null
-  const pageState = currentRoom ? 'waiting' : 'create'
-  const showWaiting = activeTab === 'create' && pageState === 'waiting' && !!currentRoom
+  const currentRoom = sessionRoom ?? existingRoom ?? null;
+  const pageState = currentRoom ? 'waiting' : 'create';
+  const showWaiting = activeTab === 'create' && pageState === 'waiting' && !!currentRoom;
 
   const statusBadge = currentRoom
-    ? STATUS_BADGES[currentRoom.status] ?? STATUS_BADGES.waiting
-    : STATUS_BADGES.waiting
+    ? (STATUS_BADGES[currentRoom.status] ?? STATUS_BADGES.waiting)
+    : STATUS_BADGES.waiting;
 
   const tabSwitcher = (
     <div
@@ -68,54 +68,54 @@ export function RoomsNewPage() {
         </button>
       ))}
     </div>
-  )
+  );
 
   const handleTabChange = (tab: ActiveTab) => {
-    setActiveTab(tab)
-  }
+    setActiveTab(tab);
+  };
 
   useRoomSocket({
     existingRoom,
     sessionRoom,
     navigate,
     onOpponentLeft: (name) => {
-      setOpponentName(name)
-      setOpponentLeft(true)
+      setOpponentName(name);
+      setOpponentLeft(true);
     },
     markNavigatedToGame: () => {
-      navigatedToGame.current = true
+      navigatedToGame.current = true;
     },
-  })
+  });
 
   // Disconnect socket on unmount only if we did NOT navigate to game room
   useEffect(() => {
     return () => {
       if (!navigatedToGame.current) {
-        socket.disconnect()
+        socket.disconnect();
       }
-    }
-  }, [])
+    };
+  }, []);
 
   const handleCreateSuccess = (room: RoomResponseDto) => {
-    setSessionRoom(room)
-    socket.connect()
-    socket.emit(EVENTS.ROOM.JOIN, { code: room.code })
-  }
+    setSessionRoom(room);
+    socket.connect();
+    socket.emit(EVENTS.ROOM.JOIN, { code: room.code });
+  };
 
   const handleJoinSuccess = (room: RoomResponseDto) => {
-    navigatedToGame.current = true
-    roomStore.getState().clearRoom()
-    socket.connect()
-    socket.emit(EVENTS.ROOM.JOIN, { code: room.code })
-    void navigate({ to: '/rooms/$code', params: { code: room.code } })
-  }
+    navigatedToGame.current = true;
+    roomStore.getState().clearRoom();
+    socket.connect();
+    socket.emit(EVENTS.ROOM.JOIN, { code: room.code });
+    void navigate({ to: '/rooms/$code', params: { code: room.code } });
+  };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center" style={{ minHeight: '100vh' }}>
         <Loader size="lg" />
       </div>
-    )
+    );
   }
 
   if (showWaiting && currentRoom) {
@@ -128,7 +128,7 @@ export function RoomsNewPage() {
         statusBadge={statusBadge}
         tabSwitcher={tabSwitcher}
       />
-    )
+    );
   }
 
   // Create / Join form
@@ -153,5 +153,5 @@ export function RoomsNewPage() {
         <JoinRoomForm onSuccess={handleJoinSuccess} />
       )}
     </div>
-  )
+  );
 }

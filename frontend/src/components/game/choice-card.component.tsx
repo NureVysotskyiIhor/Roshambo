@@ -1,32 +1,32 @@
-import type { Choice } from '@roshambo/shared'
-import { ChoiceSymbol } from './choice-symbol.component'
+import type { Choice } from '@roshambo/shared';
+import { ChoiceSymbol } from './choice-symbol.component';
 
 interface ChoiceCardProps {
-  choice: Choice
-  index: number
-  isSelected: boolean
-  isLarge: boolean
-  onClick: () => void
-  disabled?: boolean
+  choice: Choice;
+  index: number;
+  isSelected: boolean;
+  isLarge: boolean;
+  onClick: () => void;
+  disabled?: boolean;
 }
 
 const CHOICE_COLOR: Record<Choice, string> = {
   rock: 'var(--color-rock)',
   paper: 'var(--color-paper)',
   scissors: 'var(--color-scissors)',
-}
+};
 
 const CHOICE_COLOR_RGB: Record<Choice, string> = {
   rock: '239, 68, 68',
   paper: '59, 130, 246',
   scissors: '34, 197, 94',
-}
+};
 
 const CHOICE_NAME: Record<Choice, string> = {
   rock: 'Rock',
   paper: 'Paper',
   scissors: 'Scissors',
-}
+};
 
 const NumberBadge = ({ index }: { index: number }) => (
   <div
@@ -47,15 +47,22 @@ const NumberBadge = ({ index }: { index: number }) => (
   >
     {index}
   </div>
-)
+);
 
-export function ChoiceCard({ choice, index, isSelected, isLarge, onClick, disabled }: ChoiceCardProps) {
-  const color = CHOICE_COLOR[choice]
-  const rgb = CHOICE_COLOR_RGB[choice]
-  const name = CHOICE_NAME[choice]
+export function ChoiceCard({
+  choice,
+  index,
+  isSelected,
+  isLarge,
+  onClick,
+  disabled,
+}: ChoiceCardProps) {
+  const color = CHOICE_COLOR[choice];
+  const rgb = CHOICE_COLOR_RGB[choice];
+  const name = CHOICE_NAME[choice];
 
-  const width = isLarge ? 160 : disabled ? 120 : 140
-  const height = isLarge ? 160 : disabled ? 130 : 150
+  const width = isLarge ? 160 : disabled ? 120 : 140;
+  const height = isLarge ? 160 : disabled ? 130 : 150;
 
   if (isSelected && isLarge) {
     return (
@@ -112,7 +119,7 @@ export function ChoiceCard({ choice, index, isSelected, isLarge, onClick, disabl
           {name}
         </span>
       </div>
-    )
+    );
   }
 
   return (
@@ -136,14 +143,14 @@ export function ChoiceCard({ choice, index, isSelected, isLarge, onClick, disabl
       }}
       onMouseEnter={(e) => {
         if (!disabled) {
-          e.currentTarget.style.borderColor = color
-          e.currentTarget.style.backgroundColor = `rgba(${rgb}, 0.05)`
+          e.currentTarget.style.borderColor = color;
+          e.currentTarget.style.backgroundColor = `rgba(${rgb}, 0.05)`;
         }
       }}
       onMouseLeave={(e) => {
         if (!disabled) {
-          e.currentTarget.style.borderColor = 'var(--color-border)'
-          e.currentTarget.style.backgroundColor = 'var(--color-surface)'
+          e.currentTarget.style.borderColor = 'var(--color-border)';
+          e.currentTarget.style.backgroundColor = 'var(--color-surface)';
         }
       }}
     >
@@ -161,5 +168,5 @@ export function ChoiceCard({ choice, index, isSelected, isLarge, onClick, disabl
         {name}
       </span>
     </div>
-  )
+  );
 }

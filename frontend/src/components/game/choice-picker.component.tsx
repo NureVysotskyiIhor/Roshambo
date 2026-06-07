@@ -1,16 +1,16 @@
-import type { Choice } from '@roshambo/shared'
-import { ChoiceCard } from './choice-card.component'
-import { ChoiceSymbol } from './choice-symbol.component'
+import type { Choice } from '@roshambo/shared';
+import { ChoiceCard } from './choice-card.component';
+import { ChoiceSymbol } from './choice-symbol.component';
 
-const CHOICES: Choice[] = ['rock', 'paper', 'scissors']
+const CHOICES: Choice[] = ['rock', 'paper', 'scissors'];
 
 interface ChoicePickerProps {
-  myChoice: Choice | null
-  myRoundChoice: Choice | null
-  showResult: boolean
-  showCards: boolean
-  onChoose: (choice: Choice) => void
-  disabled: boolean
+  myChoice: Choice | null;
+  myRoundChoice: Choice | null;
+  showResult: boolean;
+  showCards: boolean;
+  onChoose: (choice: Choice) => void;
+  disabled: boolean;
 }
 
 export function ChoicePicker({
@@ -21,13 +21,13 @@ export function ChoicePicker({
   onChoose,
   disabled,
 }: ChoicePickerProps) {
-  const otherChoices = CHOICES.filter((c) => c !== myChoice)
+  const otherChoices = CHOICES.filter((c) => c !== myChoice);
 
   if (showResult && myRoundChoice) {
-    return <ChoiceSymbol choice={myRoundChoice} size="lg" />
+    return <ChoiceSymbol choice={myRoundChoice} size="lg" />;
   }
 
-  if (!showCards) return null
+  if (!showCards) return null;
 
   if (myChoice) {
     return (
@@ -54,7 +54,7 @@ export function ChoicePicker({
           ))}
         </div>
       </>
-    )
+    );
   }
 
   return (
@@ -70,5 +70,5 @@ export function ChoicePicker({
         />
       ))}
     </div>
-  )
+  );
 }

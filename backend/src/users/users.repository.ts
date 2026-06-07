@@ -4,7 +4,9 @@ import { db } from '../db/index.js';
 import { users } from '../db/schema.js';
 import type { UserInsert, UserRecord } from '../db/types.js';
 
-type UpdateUserData = Partial<Pick<UserInsert, 'username' | 'password' | 'email' | 'avatarUrl'>>;
+type UpdateUserData = Partial<
+  Pick<UserInsert, 'username' | 'password' | 'email' | 'avatarUrl'>
+>;
 
 @Injectable()
 export class UsersRepository {

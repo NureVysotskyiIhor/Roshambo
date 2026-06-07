@@ -1,5 +1,9 @@
 import * as bcrypt from 'bcrypt';
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 import { UserResponseDto } from './dto/user-response.dto.js';
 import { UsersMapper } from './users.mapper.js';
@@ -28,7 +32,8 @@ export class UsersService {
       }
       updateData.username = dto.username;
     }
-    if (dto.password !== undefined) updateData.password = await bcrypt.hash(dto.password, 10);
+    if (dto.password !== undefined)
+      updateData.password = await bcrypt.hash(dto.password, 10);
     if (dto.email !== undefined) updateData.email = dto.email;
     if (dto.avatarUrl !== undefined) updateData.avatarUrl = dto.avatarUrl;
 

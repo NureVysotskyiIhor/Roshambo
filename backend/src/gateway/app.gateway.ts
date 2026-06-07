@@ -12,12 +12,13 @@ import {
 } from '@nestjs/websockets';
 import { EVENTS } from '@roshambo/shared';
 import { parse } from 'cookie';
-import { Server, Socket } from 'socket.io';
+import { Server } from 'socket.io';
 import { GameService } from '../game/game.service.js';
 import { WsExceptionFilter } from '../shared/filters/ws-exception.filter.js';
 import { WsCurrentUser } from '../shared/decorators/ws-current-user.decorator.js';
 import { RoomsService } from '../rooms/rooms.service.js';
 import { UsersService } from '../users/users.service.js';
+import { type AppSocket } from '../shared/types/socket.types.js';
 
 interface JwtPayload {
   sub: string;
@@ -46,7 +47,7 @@ export class AppGateway implements OnGatewayDisconnect, OnGatewayInit {
   ) {}
 
   afterInit(server: Server): void {
-    server.use((socket: Socket, next) => {
+    server.use((socket: AppSocket, next) => {
       try {
         const cookieHeader = socket.handshake.headers.cookie;
         if (!cookieHeader) throw new Error('No cookie');
@@ -67,11 +68,11 @@ export class AppGateway implements OnGatewayDisconnect, OnGatewayInit {
   }
 
   private async handlePlayerLeave(
-    client: Socket,
+    client: AppSocket,
     user: { id: string; username: string },
     voluntary: boolean,
   ): Promise<void> {
-    const roomCode = client.data.roomCode as string | undefined;
+    const roomCode = client.data.roomCode;
     if (!roomCode) return;
 
     const room = await this.roomsService.findByCode(roomCode);
@@ -87,28 +88,29 @@ export class AppGateway implements OnGatewayDisconnect, OnGatewayInit {
         (p) => p.userId !== room.creatorId && p.leftAt === null,
       );
       if (activeOpponent) {
-        await this.roomsService.setParticipantLeft(room.id, activeOpponent.userId);
+        await this.roomsService.setParticipantLeft(
+          room.id,
+          activeOpponent.userId,
+        );
       }
 
       await this.roomsService.updateStatus(room.id, 'finished');
       this.gameService.resetRound(roomCode);
       this.gameService.resetSessionScores(roomCode);
-      this.server
-        .to(roomCode)
-        .emit(EVENTS.ROOM.CLOSED, { reason: voluntary ? 'host_left' : 'host_disconnected' });
+      this.server.to(roomCode).emit(EVENTS.ROOM.CLOSED, {
+        reason: voluntary ? 'host_left' : 'host_disconnected',
+      });
     } else {
       await this.roomsService.setParticipantLeft(room.id, user.id);
       await this.roomsService.updateStatus(room.id, 'waiting');
       this.gameService.resetRound(roomCode);
       this.gameService.resetSessionScores(roomCode);
-      this.server
-        .to(roomCode)
-        .emit(EVENTS.ROOM.OPPONENT_LEFT, {
-          reason: voluntary ? 'opponent_left' : 'opponent_disconnected',
-        });
+      this.server.to(roomCode).emit(EVENTS.ROOM.OPPONENT_LEFT, {
+        reason: voluntary ? 'opponent_left' : 'opponent_disconnected',
+      });
     }
 
-    client.leave(roomCode);
+    void client.leave(roomCode);
     client.data.roomCode = undefined;
   }
 
@@ -132,7 +134,7 @@ export class AppGateway implements OnGatewayDisconnect, OnGatewayInit {
 
   @SubscribeMessage(EVENTS.ROOM.JOIN)
   async handleRoomJoin(
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() client: AppSocket,
     @MessageBody() data: { code: string },
     @WsCurrentUser() user: { id: string; username: string },
   ): Promise<void> {
@@ -142,10 +144,8 @@ export class AppGateway implements OnGatewayDisconnect, OnGatewayInit {
       return;
     }
 
-    // Already joined this room on this socket (remount/reconnect) — just
-    // resync the Socket.IO room membership, don't rerun join side-effects
     if (client.data.roomCode === data.code) {
-      client.join(data.code);
+      void client.join(data.code);
       client.emit(EVENTS.ROOM.JOINED, {
         room,
         participant: { userId: user.id, username: user.username },
@@ -154,14 +154,18 @@ export class AppGateway implements OnGatewayDisconnect, OnGatewayInit {
     }
 
     if (room.status === 'waiting' && room.creatorId !== user.id) {
-      const myActiveRoom = await this.roomsService.findActiveRoomByCreator(user.id);
+      const myActiveRoom = await this.roomsService.findActiveRoomByCreator(
+        user.id,
+      );
       if (myActiveRoom) {
         if (myActiveRoom.status === 'in_progress') {
-          client.emit(EVENTS.ERROR, { message: 'You already have an active game' });
+          client.emit(EVENTS.ERROR, {
+            message: 'You already have an active game',
+          });
           return;
         }
         await this.closeRoom(myActiveRoom.code);
-        client.leave(myActiveRoom.code);
+        void client.leave(myActiveRoom.code);
         client.data.roomCode = undefined;
       }
 
@@ -175,7 +179,7 @@ export class AppGateway implements OnGatewayDisconnect, OnGatewayInit {
 
       await this.roomsService.setParticipantActive(room.id, user.id);
 
-      client.join(data.code);
+      void client.join(data.code);
       client.data.roomCode = data.code;
 
       client.emit(EVENTS.ROOM.JOINED, {
@@ -184,7 +188,11 @@ export class AppGateway implements OnGatewayDisconnect, OnGatewayInit {
       });
       const userProfile = await this.usersService.getMe(user.id);
       client.to(data.code).emit(EVENTS.ROOM.PLAYER_JOINED, {
-        participant: { userId: user.id, username: user.username, avatarUrl: userProfile.avatarUrl },
+        participant: {
+          userId: user.id,
+          username: user.username,
+          avatarUrl: userProfile.avatarUrl,
+        },
       });
 
       this.gameService.initRound(data.code, room.id, room.creatorId, user.id);
@@ -205,7 +213,7 @@ export class AppGateway implements OnGatewayDisconnect, OnGatewayInit {
         }
       }
 
-      client.join(data.code);
+      void client.join(data.code);
       client.data.roomCode = data.code;
 
       client.emit(EVENTS.ROOM.JOINED, {
@@ -215,9 +223,11 @@ export class AppGateway implements OnGatewayDisconnect, OnGatewayInit {
       return;
     }
 
-    // User already joined via HTTP (status is in_progress), now connecting via socket
     if (room.status === 'in_progress' && room.creatorId !== user.id) {
-      const participant = await this.roomsService.findParticipant(room.id, user.id);
+      const participant = await this.roomsService.findParticipant(
+        room.id,
+        user.id,
+      );
       if (!participant) {
         client.emit(EVENTS.ERROR, { message: 'Room is not available' });
         return;
@@ -225,7 +235,7 @@ export class AppGateway implements OnGatewayDisconnect, OnGatewayInit {
 
       await this.roomsService.setParticipantActive(room.id, user.id);
 
-      client.join(data.code);
+      void client.join(data.code);
       client.data.roomCode = data.code;
 
       client.emit(EVENTS.ROOM.JOINED, {
@@ -234,7 +244,11 @@ export class AppGateway implements OnGatewayDisconnect, OnGatewayInit {
       });
       const userProfile = await this.usersService.getMe(user.id);
       client.to(data.code).emit(EVENTS.ROOM.PLAYER_JOINED, {
-        participant: { userId: user.id, username: user.username, avatarUrl: userProfile.avatarUrl },
+        participant: {
+          userId: user.id,
+          username: user.username,
+          avatarUrl: userProfile.avatarUrl,
+        },
       });
 
       this.gameService.initRound(data.code, room.id, room.creatorId, user.id);
@@ -247,7 +261,7 @@ export class AppGateway implements OnGatewayDisconnect, OnGatewayInit {
 
   @SubscribeMessage(EVENTS.ROOM.LEFT)
   async handleRoomLeft(
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() client: AppSocket,
     @MessageBody() _data: unknown,
     @WsCurrentUser() user: { id: string; username: string },
   ): Promise<{ ok: true }> {
@@ -257,17 +271,21 @@ export class AppGateway implements OnGatewayDisconnect, OnGatewayInit {
 
   @SubscribeMessage(EVENTS.GAME.CHOICE)
   async handleGameChoice(
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() client: AppSocket,
     @MessageBody() data: { choice: 'rock' | 'paper' | 'scissors' },
     @WsCurrentUser() user: { id: string },
   ): Promise<void> {
-    const roomCode = client.data.roomCode as string | undefined;
+    const roomCode = client.data.roomCode;
     if (!roomCode) {
       client.emit(EVENTS.ERROR, { message: 'Not in a room' });
       return;
     }
 
-    const result = await this.gameService.makeChoice(roomCode, user.id, data.choice);
+    const result = await this.gameService.makeChoice(
+      roomCode,
+      user.id,
+      data.choice,
+    );
 
     if (result === null) {
       client.to(roomCode).emit(EVENTS.GAME.OPPONENT_CHOSE, {});
@@ -278,10 +296,10 @@ export class AppGateway implements OnGatewayDisconnect, OnGatewayInit {
 
   @SubscribeMessage(EVENTS.GAME.RESTART)
   async handleGameRestart(
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() client: AppSocket,
     @WsCurrentUser() user: { id: string },
   ): Promise<void> {
-    const roomCode = client.data.roomCode as string | undefined;
+    const roomCode = client.data.roomCode;
     if (!roomCode) return;
 
     if (!this.restartRequests.has(roomCode)) {
@@ -290,7 +308,9 @@ export class AppGateway implements OnGatewayDisconnect, OnGatewayInit {
     this.restartRequests.get(roomCode)!.add(user.id);
 
     if (this.restartRequests.get(roomCode)!.size < 2) {
-      client.to(roomCode).emit(EVENTS.GAME.RESTART_REQUESTED, { requestedBy: user.id });
+      client
+        .to(roomCode)
+        .emit(EVENTS.GAME.RESTART_REQUESTED, { requestedBy: user.id });
       return;
     }
 
@@ -308,12 +328,17 @@ export class AppGateway implements OnGatewayDisconnect, OnGatewayInit {
       return;
     }
 
-    this.gameService.initRound(roomCode, room.id, room.creatorId, playerTwo.userId);
+    this.gameService.initRound(
+      roomCode,
+      room.id,
+      room.creatorId,
+      playerTwo.userId,
+    );
     this.server.to(roomCode).emit(EVENTS.GAME.STARTED, {});
   }
 
-  async handleDisconnect(client: Socket): Promise<void> {
-    const user = client.data.user as { id: string; username: string } | undefined;
+  async handleDisconnect(client: AppSocket): Promise<void> {
+    const user = client.data.user;
     if (!user) return;
     await this.handlePlayerLeave(client, user, false);
   }

@@ -41,5 +41,5 @@ export function Logo() {
         Rock · Scissors · Paper
       </p>
     </div>
-  )
+  );
 }

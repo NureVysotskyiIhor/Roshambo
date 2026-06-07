@@ -9,3 +9,12 @@ export type UserInsert = typeof users.$inferInsert;
 export type RoomInsert = typeof rooms.$inferInsert;
 export type RoomParticipantInsert = typeof roomParticipants.$inferInsert;
 export type RoundInsert = typeof rounds.$inferInsert;
+
+export interface ParticipantWithUser {
+  userId: string;
+  username: string;
+  avatarUrl: string;
+  score: number;
+  role: string;
+  joinedAt: Date;
+}

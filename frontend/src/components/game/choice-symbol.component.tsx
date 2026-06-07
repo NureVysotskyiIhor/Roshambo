@@ -1,18 +1,18 @@
-import type { Choice } from '@roshambo/shared'
+import type { Choice } from '@roshambo/shared';
 
 interface ChoiceSymbolProps {
-  choice: Choice
-  size?: 'sm' | 'md' | 'lg'
+  choice: Choice;
+  size?: 'sm' | 'md' | 'lg';
 }
 
 const DIMENSIONS: Record<Choice, Record<'sm' | 'md' | 'lg', number>> = {
   rock: { sm: 40, md: 60, lg: 80 },
   paper: { sm: 36, md: 55, lg: 80 },
   scissors: { sm: 34, md: 50, lg: 80 },
-}
+};
 
 export function ChoiceSymbol({ choice, size = 'md' }: ChoiceSymbolProps) {
-  const dim = DIMENSIONS[choice][size]
+  const dim = DIMENSIONS[choice][size];
 
   if (choice === 'rock') {
     return (
@@ -24,7 +24,7 @@ export function ChoiceSymbol({ choice, size = 'md' }: ChoiceSymbolProps) {
           backgroundColor: 'var(--color-rock)',
         }}
       />
-    )
+    );
   }
 
   if (choice === 'paper') {
@@ -37,7 +37,7 @@ export function ChoiceSymbol({ choice, size = 'md' }: ChoiceSymbolProps) {
           backgroundColor: 'var(--color-paper)',
         }}
       />
-    )
+    );
   }
 
   return (
@@ -49,5 +49,5 @@ export function ChoiceSymbol({ choice, size = 'md' }: ChoiceSymbolProps) {
         backgroundColor: 'var(--color-scissors)',
       }}
     />
-  )
+  );
 }

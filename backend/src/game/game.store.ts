@@ -7,8 +7,15 @@ export class GameStore {
   private readonly rounds = new Map<string, ActiveRound>();
   private readonly sessionScores = new Map<string, Record<string, number>>();
 
-  init(roomCode: string, data: Omit<ActiveRound, 'playerOneChoice' | 'playerTwoChoice'>): void {
-    this.rounds.set(roomCode, { ...data, playerOneChoice: null, playerTwoChoice: null });
+  init(
+    roomCode: string,
+    data: Omit<ActiveRound, 'playerOneChoice' | 'playerTwoChoice'>,
+  ): void {
+    this.rounds.set(roomCode, {
+      ...data,
+      playerOneChoice: null,
+      playerTwoChoice: null,
+    });
   }
 
   get(roomCode: string): ActiveRound | undefined {
@@ -36,7 +43,10 @@ export class GameStore {
     this.rounds.delete(roomCode);
   }
 
-  incrementSessionScore(roomCode: string, userId: string): Record<string, number> {
+  incrementSessionScore(
+    roomCode: string,
+    userId: string,
+  ): Record<string, number> {
     const scores = this.sessionScores.get(roomCode) ?? {};
     scores[userId] = (scores[userId] ?? 0) + 1;
     this.sessionScores.set(roomCode, scores);

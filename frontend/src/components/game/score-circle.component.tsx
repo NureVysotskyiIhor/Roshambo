@@ -1,9 +1,9 @@
 interface ScoreCircleProps {
-  myScore: number
-  opponentScore: number
-  roundNumber: number
-  gameState: 'playing' | 'round_result' | 'disconnected'
-  resultLabel?: 'VICTORY' | 'DEFEAT' | 'DRAW' | 'FINAL'
+  myScore: number;
+  opponentScore: number;
+  roundNumber: number;
+  gameState: 'playing' | 'round_result' | 'disconnected';
+  resultLabel?: 'VICTORY' | 'DEFEAT' | 'DRAW' | 'FINAL';
 }
 
 export function ScoreCircle({
@@ -13,21 +13,21 @@ export function ScoreCircle({
   gameState,
   resultLabel,
 }: ScoreCircleProps) {
-  const label = gameState === 'playing' ? `ROUND ${roundNumber}` : (resultLabel ?? 'FINAL')
+  const label = gameState === 'playing' ? `ROUND ${roundNumber}` : (resultLabel ?? 'FINAL');
 
   const myColor =
     myScore > opponentScore
       ? 'var(--color-win)'
       : myScore < opponentScore
         ? 'var(--color-lose)'
-        : 'white'
+        : 'white';
 
   const opponentColor =
     opponentScore > myScore
       ? 'var(--color-win)'
       : opponentScore < myScore
         ? 'var(--color-lose)'
-        : 'white'
+        : 'white';
 
   return (
     <div
@@ -60,5 +60,5 @@ export function ScoreCircle({
         <span style={{ color: opponentColor }}>{opponentScore}</span>
       </span>
     </div>
-  )
+  );
 }

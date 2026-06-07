@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { CurrentUser } from '../shared/decorators/current-user.decorator.js';
 import { JwtAuthGuard } from '../shared/guards/jwt-auth.guard.js';
 import { CreateRoomDto } from './dto/create-room.dto.js';

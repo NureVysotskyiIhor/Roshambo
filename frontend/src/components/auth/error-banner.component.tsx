@@ -1,5 +1,5 @@
 interface ErrorBannerProps {
-  message: string
+  message: string;
 }
 
 export function ErrorBanner({ message }: ErrorBannerProps) {
@@ -24,5 +24,5 @@ export function ErrorBanner({ message }: ErrorBannerProps) {
       />
       <p style={{ fontSize: 14, color: 'var(--color-lose)' }}>{message}</p>
     </div>
-  )
+  );
 }

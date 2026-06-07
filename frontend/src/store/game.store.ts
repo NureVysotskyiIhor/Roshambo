@@ -1,31 +1,26 @@
-import { create } from 'zustand'
-import type { Choice, RoundResultPayload } from '@roshambo/shared'
+import { create } from 'zustand';
+import type { Choice, RoundResultPayload } from '@roshambo/shared';
 
-type GameStatus =
-  | 'idle'
-  | 'choosing'
-  | 'waiting_opponent'
-  | 'round_result'
-  | 'restart_requested'
+type GameStatus = 'idle' | 'choosing' | 'waiting_opponent' | 'round_result' | 'restart_requested';
 
 interface GameState {
-  status: GameStatus
-  myChoice: Choice | null
-  opponentChose: boolean
-  roundResult: RoundResultPayload | null
-  restartRequestedBy: string | null
-  sessionScores: { [userId: string]: number }
-  historicalScores: { [userId: string]: number }
-  setStatus: (status: GameStatus) => void
-  setMyChoice: (choice: Choice) => void
-  setOpponentChose: (value: boolean) => void
-  setRoundResult: (result: RoundResultPayload) => void
-  setRestartRequestedBy: (userId: string) => void
-  setSessionScores: (scores: { [userId: string]: number }) => void
-  setHistoricalScores: (scores: { [userId: string]: number }) => void
-  resetSessionScores: () => void
-  resetRound: () => void
-  resetAll: () => void
+  status: GameStatus;
+  myChoice: Choice | null;
+  opponentChose: boolean;
+  roundResult: RoundResultPayload | null;
+  restartRequestedBy: string | null;
+  sessionScores: { [userId: string]: number };
+  historicalScores: { [userId: string]: number };
+  setStatus: (status: GameStatus) => void;
+  setMyChoice: (choice: Choice) => void;
+  setOpponentChose: (value: boolean) => void;
+  setRoundResult: (result: RoundResultPayload) => void;
+  setRestartRequestedBy: (userId: string) => void;
+  setSessionScores: (scores: { [userId: string]: number }) => void;
+  setHistoricalScores: (scores: { [userId: string]: number }) => void;
+  resetSessionScores: () => void;
+  resetRound: () => void;
+  resetAll: () => void;
 }
 
 export const gameStore = create<GameState>()((set) => ({
@@ -62,4 +57,4 @@ export const gameStore = create<GameState>()((set) => ({
       restartRequestedBy: null,
       sessionScores: {},
     }),
-}))
+}));

@@ -15,13 +15,16 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         ExtractJwt.fromAuthHeaderAsBearerToken(),
-        (req: Request) => req?.cookies?.accessToken ?? null,
+        (req: Request) =>
+          (req?.cookies as Record<string, string> | undefined)?.[
+            'accessToken'
+          ] ?? null,
       ]),
       secretOrKey: config.get<string>('JWT_ACCESS_SECRET')!,
     });
   }
 
-  validate(payload: JwtPayload) {
+  validate(payload: JwtPayload): { id: string; username: string } {
     return { id: payload.sub, username: payload.username };
   }
 }

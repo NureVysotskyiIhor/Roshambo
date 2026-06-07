@@ -1,5 +1,5 @@
 interface WaitingIndicatorProps {
-  text: string
+  text: string;
 }
 
 export function WaitingIndicator({ text }: WaitingIndicatorProps) {
@@ -11,10 +11,7 @@ export function WaitingIndicator({ text }: WaitingIndicatorProps) {
           50% { opacity: 0.3 }
         }
       `}</style>
-      <div
-        className="flex items-center justify-center"
-        style={{ gap: 8, marginTop: 16 }}
-      >
+      <div className="flex items-center justify-center" style={{ gap: 8, marginTop: 16 }}>
         <div
           style={{
             width: 8,
@@ -29,5 +26,5 @@ export function WaitingIndicator({ text }: WaitingIndicatorProps) {
         </p>
       </div>
     </>
-  )
+  );
 }

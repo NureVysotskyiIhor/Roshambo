@@ -1,13 +1,13 @@
-import { forwardRef } from 'react'
-import type { CSSProperties, InputHTMLAttributes, ReactNode } from 'react'
+import { forwardRef } from 'react';
+import type { CSSProperties, InputHTMLAttributes, ReactNode } from 'react';
 
 interface FormFieldProps extends InputHTMLAttributes<HTMLInputElement> {
-  label: string
-  labelRight?: ReactNode
-  icon: ReactNode
-  rightElement?: ReactNode
-  error?: boolean
-  inputStyle?: CSSProperties
+  label: string;
+  labelRight?: ReactNode;
+  icon: ReactNode;
+  rightElement?: ReactNode;
+  error?: boolean;
+  inputStyle?: CSSProperties;
 }
 
 export const FormField = forwardRef<HTMLInputElement, FormFieldProps>(
@@ -53,12 +53,12 @@ export const FormField = forwardRef<HTMLInputElement, FormFieldProps>(
               ...inputStyle,
             }}
             onFocus={(e) => {
-              e.target.style.borderColor = error ? 'var(--color-lose)' : 'var(--color-primary)'
-              inputProps.onFocus?.(e)
+              e.target.style.borderColor = error ? 'var(--color-lose)' : 'var(--color-primary)';
+              inputProps.onFocus?.(e);
             }}
             onBlur={(e) => {
-              e.target.style.borderColor = error ? 'var(--color-lose)' : 'var(--color-border)'
-              inputProps.onBlur?.(e)
+              e.target.style.borderColor = error ? 'var(--color-lose)' : 'var(--color-border)';
+              inputProps.onBlur?.(e);
             }}
           />
           {rightElement && (
@@ -76,7 +76,7 @@ export const FormField = forwardRef<HTMLInputElement, FormFieldProps>(
           )}
         </div>
       </div>
-    )
+    );
   },
-)
-FormField.displayName = 'FormField'
+);
+FormField.displayName = 'FormField';

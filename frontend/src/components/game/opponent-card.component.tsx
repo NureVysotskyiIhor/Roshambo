@@ -1,19 +1,19 @@
-import type { Choice } from '@roshambo/shared'
-import { ChoiceSymbol } from './choice-symbol.component'
+import type { Choice } from '@roshambo/shared';
+import { ChoiceSymbol } from './choice-symbol.component';
 
-type OpponentCardState = 'waiting' | 'chosen' | 'revealed'
+type OpponentCardState = 'waiting' | 'chosen' | 'revealed';
 
 interface OpponentCardProps {
-  state: OpponentCardState
-  choice?: Choice
+  state: OpponentCardState;
+  choice?: Choice;
 }
 
 export function OpponentCard({ state, choice }: OpponentCardProps) {
   if (state === 'revealed' && choice) {
-    return <ChoiceSymbol choice={choice} size="lg" />
+    return <ChoiceSymbol choice={choice} size="lg" />;
   }
 
-  const isChosen = state === 'chosen'
+  const isChosen = state === 'chosen';
 
   return (
     <div
@@ -32,5 +32,5 @@ export function OpponentCard({ state, choice }: OpponentCardProps) {
     >
       ?
     </div>
-  )
+  );
 }

@@ -1,4 +1,9 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { nanoid } from 'nanoid';
 import type { ParticipantDto } from '@roshambo/shared';
 import type { RoomParticipantRecord } from '../db/types.js';
@@ -25,7 +30,10 @@ export class RoomsService {
     return this.mapper.toResponse(room);
   }
 
-  async createRoom(userId: string, dto: CreateRoomDto): Promise<RoomResponseDto> {
+  async createRoom(
+    userId: string,
+    dto: CreateRoomDto,
+  ): Promise<RoomResponseDto> {
     const myRoom = await this.repository.findByCreatorId(userId);
     if (myRoom && myRoom.status !== 'finished') {
       throw new BadRequestException('You already have an active room');
@@ -36,15 +44,21 @@ export class RoomsService {
       code = nanoid(6);
     } while (await this.repository.findByCode(code));
 
-    const room = await this.repository.create({ code, creatorId: userId, name: dto.name });
+    const room = await this.repository.create({
+      code,
+      creatorId: userId,
+      name: dto.name,
+    });
     return this.mapper.toResponse(room);
   }
 
   async joinRoom(userId: string, code: string): Promise<RoomResponseDto> {
     const room = await this.repository.findByCode(code);
     if (!room) throw new NotFoundException('Room not found');
-    if (room.status !== 'waiting') throw new BadRequestException('Room is not available');
-    if (room.creatorId === userId) throw new BadRequestException('Cannot join your own room');
+    if (room.status !== 'waiting')
+      throw new BadRequestException('Room is not available');
+    if (room.creatorId === userId)
+      throw new BadRequestException('Cannot join your own room');
 
     const myRoom = await this.repository.findByCreatorId(userId);
     if (myRoom && myRoom.status === 'in_progress') {
@@ -57,7 +71,10 @@ export class RoomsService {
 
     const existing = await this.repository.findParticipant(room.id, userId);
     if (existing) {
-      const updatedRoom = await this.repository.updateStatus(room.id, 'in_progress');
+      const updatedRoom = await this.repository.updateStatus(
+        room.id,
+        'in_progress',
+      );
       return this.mapper.toResponse(updatedRoom);
     }
 
@@ -65,10 +82,15 @@ export class RoomsService {
     return this.mapper.toResponse(updatedRoom);
   }
 
-  async updateRoom(userId: string, code: string, dto: UpdateRoomDto): Promise<RoomResponseDto> {
+  async updateRoom(
+    userId: string,
+    code: string,
+    dto: UpdateRoomDto,
+  ): Promise<RoomResponseDto> {
     const room = await this.repository.findByCode(code);
     if (!room) throw new NotFoundException('Room not found');
-    if (room.creatorId !== userId) throw new ForbiddenException('Not room creator');
+    if (room.creatorId !== userId)
+      throw new ForbiddenException('Not room creator');
 
     const updatedRoom = await this.repository.updateName(room.id, dto.name);
     return this.mapper.toResponse(updatedRoom);
@@ -79,7 +101,10 @@ export class RoomsService {
     return room ? this.mapper.toResponse(room) : null;
   }
 
-  async updateStatus(roomId: string, status: 'waiting' | 'in_progress' | 'finished'): Promise<void> {
+  async updateStatus(
+    roomId: string,
+    status: 'waiting' | 'in_progress' | 'finished',
+  ): Promise<void> {
     await this.repository.updateStatus(roomId, status);
   }
 
@@ -87,12 +112,16 @@ export class RoomsService {
     return this.repository.findParticipants(roomId);
   }
 
-  findParticipant(roomId: string, userId: string): Promise<RoomParticipantRecord | null> {
+  findParticipant(
+    roomId: string,
+    userId: string,
+  ): Promise<RoomParticipantRecord | null> {
     return this.repository.findParticipant(roomId, userId);
   }
 
   async getParticipants(roomId: string): Promise<ParticipantDto[]> {
-    const participants = await this.repository.findParticipantsWithUsers(roomId);
+    const participants =
+      await this.repository.findParticipantsWithUsers(roomId);
     return participants.map((p) => this.mapper.toParticipantDto(p));
   }
 
@@ -104,10 +133,12 @@ export class RoomsService {
     await this.repository.setParticipantActive(roomId, userId);
   }
 
-  async findActiveRoomByCreator(userId: string): Promise<RoomResponseDto | null> {
-  const room = await this.repository.findByCreatorId(userId);
-  if (!room) return null;
-  if (room.status === 'finished') return null;
-  return this.mapper.toResponse(room);
+  async findActiveRoomByCreator(
+    userId: string,
+  ): Promise<RoomResponseDto | null> {
+    const room = await this.repository.findByCreatorId(userId);
+    if (!room) return null;
+    if (room.status === 'finished') return null;
+    return this.mapper.toResponse(room);
   }
 }

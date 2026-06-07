@@ -2,7 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { WsException } from '@nestjs/websockets';
 import { GameRepository } from './game.repository.js';
 import { GameStore } from './game.store.js';
-import type { ActiveRound, Choice, RoundResult, RoundResultPayload } from './types/game.types.js';
+import type {
+  ActiveRound,
+  Choice,
+  RoundResult,
+  RoundResultPayload,
+} from './types/game.types.js';
 
 @Injectable()
 export class GameService {

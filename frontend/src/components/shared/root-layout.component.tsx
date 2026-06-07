@@ -1,15 +1,12 @@
-import { Outlet } from '@tanstack/react-router'
-import { Toaster } from 'sonner'
+import { Outlet } from '@tanstack/react-router';
+import { Toaster } from 'sonner';
 
 export function RootLayout() {
   return (
     <>
       <Toaster position="top-right" richColors />
       <div className="min-h-screen flex flex-col">
-        <main
-          className="flex-1 flex items-center justify-center"
-          style={{ padding: '32px 16px' }}
-        >
+        <main className="flex-1 flex items-center justify-center" style={{ padding: '32px 16px' }}>
           <Outlet />
         </main>
         <footer style={{ padding: '16px', textAlign: 'center' }}>
@@ -19,5 +16,5 @@ export function RootLayout() {
         </footer>
       </div>
     </>
-  )
+  );
 }

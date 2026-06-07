@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { WsException } from '@nestjs/websockets';
 import { parse } from 'cookie';
-import { Socket } from 'socket.io';
+import { type AppSocket } from '../types/socket.types.js';
 
 interface JwtPayload {
   sub: string;
@@ -18,7 +18,7 @@ export class WsAuthGuard implements CanActivate {
   ) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const client: Socket = context.switchToWs().getClient<Socket>();
+    const client = context.switchToWs().getClient<AppSocket>();
     const cookieHeader = client.handshake.headers.cookie;
 
     if (!cookieHeader) {

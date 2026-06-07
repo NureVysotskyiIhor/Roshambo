@@ -52,7 +52,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const passwordValid = await bcrypt.compare(dto.password, userRecord.password);
+    const passwordValid = await bcrypt.compare(
+      dto.password,
+      userRecord.password,
+    );
     if (!passwordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -66,11 +69,15 @@ export class AuthService {
     const payload = { sub: userId, username };
     const accessToken = this.jwtService.sign(payload, {
       secret: this.configService.get<string>('JWT_ACCESS_SECRET')!,
-      expiresIn: this.configService.get('JWT_ACCESS_EXPIRES_IN') as unknown as import('ms').StringValue,
+      expiresIn: this.configService.get(
+        'JWT_ACCESS_EXPIRES_IN',
+      ) as import('ms').StringValue,
     });
     const refreshToken = this.jwtService.sign(payload, {
       secret: this.configService.get<string>('JWT_REFRESH_SECRET')!,
-      expiresIn: this.configService.get('JWT_REFRESH_EXPIRES_IN') as unknown as import('ms').StringValue,
+      expiresIn: this.configService.get(
+        'JWT_REFRESH_EXPIRES_IN',
+      ) as import('ms').StringValue,
     });
     return { accessToken, refreshToken };
   }

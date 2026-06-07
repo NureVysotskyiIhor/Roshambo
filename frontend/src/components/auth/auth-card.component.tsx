@@ -1,9 +1,9 @@
-import type { ReactNode } from 'react'
-import { Logo } from '../shared/logo.component'
+import type { ReactNode } from 'react';
+import { Logo } from '../shared/logo.component';
 
 interface AuthCardProps {
-  tagline: string
-  children: ReactNode
+  tagline: string;
+  children: ReactNode;
 }
 
 export function AuthCard({ tagline, children }: AuthCardProps) {
@@ -19,10 +19,12 @@ export function AuthCard({ tagline, children }: AuthCardProps) {
       }}
     >
       <Logo />
-      <p style={{ fontSize: 14, color: 'var(--color-text-muted)', marginTop: 16, marginBottom: 24 }}>
+      <p
+        style={{ fontSize: 14, color: 'var(--color-text-muted)', marginTop: 16, marginBottom: 24 }}
+      >
         {tagline}
       </p>
       {children}
     </div>
-  )
+  );
 }

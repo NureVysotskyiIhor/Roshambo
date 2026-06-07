@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { ParticipantDto } from '@roshambo/shared';
-import type { RoomRecord } from '../db/types.js';
+import type { ParticipantWithUser, RoomRecord } from '../db/types.js';
 import { RoomResponseDto } from './dto/room-response.dto.js';
-import type { ParticipantWithUser } from './rooms.repository.js';
 
 @Injectable()
 export class RoomsMapper {

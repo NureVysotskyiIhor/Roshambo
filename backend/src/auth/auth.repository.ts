@@ -6,7 +6,10 @@ import { UserInsert, UserRecord } from '../db/types.js';
 
 export type { UserRecord };
 
-type CreateUserData = Pick<UserInsert, 'username' | 'password' | 'avatarUrl'> & {
+type CreateUserData = Pick<
+  UserInsert,
+  'username' | 'password' | 'avatarUrl'
+> & {
   email?: string;
   role?: 'guest' | 'registered';
 };

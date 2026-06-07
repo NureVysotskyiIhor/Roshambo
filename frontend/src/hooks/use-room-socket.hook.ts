@@ -1,11 +1,11 @@
-import { useEffect } from 'react'
-import type { useNavigate } from '@tanstack/react-router'
-import { toast } from 'sonner'
-import { EVENTS } from '@roshambo/shared'
-import type { RoomResponseDto, ParticipantDto } from '@roshambo/shared'
-import { socket } from '../socket/socket.client'
-import { roomStore } from '../store/room.store'
-import { authStore } from '../store/auth.store'
+import { useEffect } from 'react';
+import type { useNavigate } from '@tanstack/react-router';
+import { toast } from 'sonner';
+import { EVENTS } from '@roshambo/shared';
+import type { RoomResponseDto, ParticipantDto } from '@roshambo/shared';
+import { socket } from '../socket/socket.client';
+import { roomStore } from '../store/room.store';
+import { authStore } from '../store/auth.store';
 
 export const STATUS_BADGES: Record<
   RoomResponseDto['status'],
@@ -29,14 +29,14 @@ export const STATUS_BADGES: Record<
     background: 'rgba(255, 255, 255, 0.06)',
     border: '1px solid var(--color-border)',
   },
-}
+};
 
 interface UseRoomSocketParams {
-  existingRoom: RoomResponseDto | null | undefined
-  sessionRoom: RoomResponseDto | null
-  navigate: ReturnType<typeof useNavigate>
-  onOpponentLeft: (name: string) => void
-  markNavigatedToGame: () => void
+  existingRoom: RoomResponseDto | null | undefined;
+  sessionRoom: RoomResponseDto | null;
+  navigate: ReturnType<typeof useNavigate>;
+  onOpponentLeft: (name: string) => void;
+  markNavigatedToGame: () => void;
 }
 
 export function useRoomSocket({
@@ -46,57 +46,57 @@ export function useRoomSocket({
   onOpponentLeft,
   markNavigatedToGame,
 }: UseRoomSocketParams): void {
-  const user = authStore((s) => s.user)
-  const currentRoom = sessionRoom ?? existingRoom ?? null
-  const pageState = currentRoom ? 'waiting' : 'create'
+  const user = authStore((s) => s.user);
+  const currentRoom = sessionRoom ?? existingRoom ?? null;
+  const pageState = currentRoom ? 'waiting' : 'create';
 
   // Connect socket when existing room found on mount
   useEffect(() => {
     if (existingRoom && !sessionRoom) {
-      socket.connect()
-      socket.emit(EVENTS.ROOM.JOIN, { code: existingRoom.code })
+      socket.connect();
+      socket.emit(EVENTS.ROOM.JOIN, { code: existingRoom.code });
     }
-  }, [existingRoom, sessionRoom])
+  }, [existingRoom, sessionRoom]);
 
   // Socket listeners — set up and cleaned up when in waiting state
   useEffect(() => {
-    if (pageState !== 'waiting' || !currentRoom) return
+    if (pageState !== 'waiting' || !currentRoom) return;
 
     const handleJoined = (data: { room: RoomResponseDto; participant: ParticipantDto }) => {
-      roomStore.getState().setRoom(data.room)
-      roomStore.getState().addParticipant(data.participant)
+      roomStore.getState().setRoom(data.room);
+      roomStore.getState().addParticipant(data.participant);
       if (data.room.status === 'in_progress') {
-        markNavigatedToGame()
-        void navigate({ to: '/rooms/$code', params: { code: data.room.code } })
+        markNavigatedToGame();
+        void navigate({ to: '/rooms/$code', params: { code: data.room.code } });
       }
-    }
+    };
 
     const handlePlayerJoined = (data: { participant: ParticipantDto }) => {
-      markNavigatedToGame()
-      roomStore.getState().upsertParticipant(data.participant)
-      void navigate({ to: '/rooms/$code', params: { code: currentRoom.code } })
-    }
+      markNavigatedToGame();
+      roomStore.getState().upsertParticipant(data.participant);
+      void navigate({ to: '/rooms/$code', params: { code: currentRoom.code } });
+    };
 
     const handleOpponentLeft = () => {
-      const participants = roomStore.getState().participants
-      const opponent = participants.find((p) => p.userId !== user?.id)
-      onOpponentLeft(opponent?.username ?? '')
-    }
+      const participants = roomStore.getState().participants;
+      const opponent = participants.find((p) => p.userId !== user?.id);
+      onOpponentLeft(opponent?.username ?? '');
+    };
 
     const handleError = (data: { message: string }) => {
-      toast.error(data?.message ?? 'Socket error')
-    }
+      toast.error(data?.message ?? 'Socket error');
+    };
 
-    socket.on(EVENTS.ROOM.JOINED, handleJoined)
-    socket.on(EVENTS.ROOM.PLAYER_JOINED, handlePlayerJoined)
-    socket.on(EVENTS.ROOM.OPPONENT_LEFT, handleOpponentLeft)
-    socket.on(EVENTS.ERROR, handleError)
+    socket.on(EVENTS.ROOM.JOINED, handleJoined);
+    socket.on(EVENTS.ROOM.PLAYER_JOINED, handlePlayerJoined);
+    socket.on(EVENTS.ROOM.OPPONENT_LEFT, handleOpponentLeft);
+    socket.on(EVENTS.ERROR, handleError);
 
     return () => {
-      socket.off(EVENTS.ROOM.JOINED, handleJoined)
-      socket.off(EVENTS.ROOM.PLAYER_JOINED, handlePlayerJoined)
-      socket.off(EVENTS.ROOM.OPPONENT_LEFT, handleOpponentLeft)
-      socket.off(EVENTS.ERROR, handleError)
-    }
-  }, [pageState, currentRoom, navigate, user?.id, onOpponentLeft, markNavigatedToGame])
+      socket.off(EVENTS.ROOM.JOINED, handleJoined);
+      socket.off(EVENTS.ROOM.PLAYER_JOINED, handlePlayerJoined);
+      socket.off(EVENTS.ROOM.OPPONENT_LEFT, handleOpponentLeft);
+      socket.off(EVENTS.ERROR, handleError);
+    };
+  }, [pageState, currentRoom, navigate, user?.id, onOpponentLeft, markNavigatedToGame]);
 }

@@ -1,23 +1,23 @@
-import { useState } from 'react'
-import { Link, useNavigate } from '@tanstack/react-router'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { Eye, EyeOff, Lock, Mail, User } from 'lucide-react'
-import { useRegister } from '../queries/auth.queries'
-import { AuthCard } from '../components/auth/auth-card.component'
-import { ErrorBanner } from '../components/auth/error-banner.component'
-import { FormField } from '../components/auth/form-field.component'
-import { SubmitButton } from '../components/auth/submit-button.component'
-import { registerSchema, type RegisterFormData } from '../lib/validations/auth.validations'
-import { parseError } from '../lib/parse-error'
-import { PATHS } from '../routes/paths'
+import { useState } from 'react';
+import { Link, useNavigate } from '@tanstack/react-router';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Eye, EyeOff, Lock, Mail, User } from 'lucide-react';
+import { useRegister } from '../queries/auth.queries';
+import { AuthCard } from '../components/auth/auth-card.component';
+import { ErrorBanner } from '../components/auth/error-banner.component';
+import { FormField } from '../components/auth/form-field.component';
+import { SubmitButton } from '../components/auth/submit-button.component';
+import { registerSchema, type RegisterFormData } from '../lib/validations/auth.validations';
+import { parseError } from '../lib/parse-error';
+import { PATHS } from '../routes/paths';
 
 export function RegisterPage() {
-  const navigate = useNavigate()
-  const [showPassword, setShowPassword] = useState(false)
-  const [serverError, setServerError] = useState<string | null>(null)
+  const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
 
-  const registerMutation = useRegister()
+  const registerMutation = useRegister();
 
   const {
     register,
@@ -25,30 +25,30 @@ export function RegisterPage() {
     formState: { errors },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
-  })
+  });
 
   const onSubmit = (data: RegisterFormData) => {
-    setServerError(null)
+    setServerError(null);
     const payload = {
       username: data.username,
       password: data.password,
       ...(data.email ? { email: data.email } : {}),
-    }
+    };
     registerMutation.mutate(payload, {
       onSuccess: () => {
-        void navigate({ to: PATHS.ROOMS_NEW })
+        void navigate({ to: PATHS.ROOMS_NEW });
       },
       onError: (err) => {
-        setServerError(parseError(err))
+        setServerError(parseError(err));
       },
-    })
-  }
+    });
+  };
 
-  const displayError = serverError ?? Object.values(errors)[0]?.message
+  const displayError = serverError ?? Object.values(errors)[0]?.message;
 
   return (
     <AuthCard tagline="Create an account to start your first duel.">
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+      <form onSubmit={(e) => { e.preventDefault(); void handleSubmit(onSubmit)(); }} className="flex flex-col gap-4">
         <FormField
           label="Username"
           icon={<User size={16} />}
@@ -104,12 +104,19 @@ export function RegisterPage() {
         </SubmitButton>
       </form>
 
-      <p style={{ fontSize: 14, color: 'var(--color-text-muted)', textAlign: 'center', marginTop: 20 }}>
+      <p
+        style={{
+          fontSize: 14,
+          color: 'var(--color-text-muted)',
+          textAlign: 'center',
+          marginTop: 20,
+        }}
+      >
         Already have an account?{' '}
         <Link to={PATHS.LOGIN} style={{ color: 'var(--color-primary)' }}>
           Sign in
         </Link>
       </p>
     </AuthCard>
-  )
+  );
 }

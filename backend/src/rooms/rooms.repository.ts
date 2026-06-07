@@ -3,21 +3,15 @@ import { and, eq, isNull } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { roomParticipants, rooms, users } from '../db/schema.js';
 import type {
+  ParticipantWithUser,
   RoomInsert,
   RoomParticipantRecord,
   RoomRecord,
 } from '../db/types.js';
 
-type CreateRoomData = Pick<RoomInsert, 'code' | 'creatorId'> & { name?: string };
-
-export interface ParticipantWithUser {
-  userId: string;
-  username: string;
-  avatarUrl: string;
-  score: number;
-  role: string;
-  joinedAt: Date;
-}
+type CreateRoomData = Pick<RoomInsert, 'code' | 'creatorId'> & {
+  name?: string;
+};
 
 @Injectable()
 export class RoomsRepository {
@@ -53,7 +47,9 @@ export class RoomsRepository {
 
   joinRoom(roomId: string, userId: string): Promise<RoomRecord> {
     return db.transaction(async (tx) => {
-      await tx.insert(roomParticipants).values({ roomId, userId, role: 'player' });
+      await tx
+        .insert(roomParticipants)
+        .values({ roomId, userId, role: 'player' });
       const [updated] = await tx
         .update(rooms)
         .set({ status: 'in_progress' })
@@ -88,8 +84,9 @@ export class RoomsRepository {
   }
 
   findParticipants(roomId: string): Promise<RoomParticipantRecord[]> {
-    return db.query.roomParticipants
-      .findMany({ where: eq(roomParticipants.roomId, roomId) });
+    return db.query.roomParticipants.findMany({
+      where: eq(roomParticipants.roomId, roomId),
+    });
   }
 
   findParticipantsWithUsers(roomId: string): Promise<ParticipantWithUser[]> {
@@ -107,26 +104,39 @@ export class RoomsRepository {
       .where(
         and(
           eq(roomParticipants.roomId, roomId),
-          isNull(roomParticipants.leftAt)
-        )
-)
+          isNull(roomParticipants.leftAt),
+        ),
+      );
   }
 
   async setParticipantLeft(roomId: string, userId: string): Promise<void> {
     await db
       .update(roomParticipants)
       .set({ leftAt: new Date() })
-      .where(and(eq(roomParticipants.roomId, roomId), eq(roomParticipants.userId, userId)));
+      .where(
+        and(
+          eq(roomParticipants.roomId, roomId),
+          eq(roomParticipants.userId, userId),
+        ),
+      );
   }
 
   async setParticipantActive(roomId: string, userId: string): Promise<void> {
     await db
       .update(roomParticipants)
       .set({ leftAt: null })
-      .where(and(eq(roomParticipants.roomId, roomId), eq(roomParticipants.userId, userId)));
+      .where(
+        and(
+          eq(roomParticipants.roomId, roomId),
+          eq(roomParticipants.userId, userId),
+        ),
+      );
   }
 
-  findParticipant(roomId: string, userId: string): Promise<RoomParticipantRecord | null> {
+  findParticipant(
+    roomId: string,
+    userId: string,
+  ): Promise<RoomParticipantRecord | null> {
     return db.query.roomParticipants
       .findFirst({
         where: and(
