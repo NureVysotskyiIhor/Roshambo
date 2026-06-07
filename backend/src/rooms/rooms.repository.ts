@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { db } from '../db/index.js';
-import { roomParticipants, rooms } from '../db/schema.js';
+import { roomParticipants, rooms, users } from '../db/schema.js';
 import type {
   RoomInsert,
   RoomParticipantRecord,
@@ -9,6 +9,15 @@ import type {
 } from '../db/types.js';
 
 type CreateRoomData = Pick<RoomInsert, 'code' | 'creatorId'> & { name?: string };
+
+export interface ParticipantWithUser {
+  userId: string;
+  username: string;
+  avatarUrl: string;
+  score: number;
+  role: string;
+  joinedAt: Date;
+}
 
 @Injectable()
 export class RoomsRepository {
@@ -81,6 +90,40 @@ export class RoomsRepository {
   findParticipants(roomId: string): Promise<RoomParticipantRecord[]> {
     return db.query.roomParticipants
       .findMany({ where: eq(roomParticipants.roomId, roomId) });
+  }
+
+  findParticipantsWithUsers(roomId: string): Promise<ParticipantWithUser[]> {
+    return db
+      .select({
+        userId: roomParticipants.userId,
+        username: users.username,
+        avatarUrl: users.avatarUrl,
+        score: roomParticipants.score,
+        role: roomParticipants.role,
+        joinedAt: roomParticipants.joinedAt,
+      })
+      .from(roomParticipants)
+      .innerJoin(users, eq(roomParticipants.userId, users.id))
+      .where(
+        and(
+          eq(roomParticipants.roomId, roomId),
+          isNull(roomParticipants.leftAt)
+        )
+)
+  }
+
+  async setParticipantLeft(roomId: string, userId: string): Promise<void> {
+    await db
+      .update(roomParticipants)
+      .set({ leftAt: new Date() })
+      .where(and(eq(roomParticipants.roomId, roomId), eq(roomParticipants.userId, userId)));
+  }
+
+  async setParticipantActive(roomId: string, userId: string): Promise<void> {
+    await db
+      .update(roomParticipants)
+      .set({ leftAt: null })
+      .where(and(eq(roomParticipants.roomId, roomId), eq(roomParticipants.userId, userId)));
   }
 
   findParticipant(roomId: string, userId: string): Promise<RoomParticipantRecord | null> {

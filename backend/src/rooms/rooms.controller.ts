@@ -23,6 +23,11 @@ export class RoomsController {
     return this.service.createRoom(user.id, dto);
   }
 
+  @Get(':roomId/participants')
+  getParticipants(@Param('roomId') roomId: string) {
+    return this.service.getParticipants(roomId);
+  }
+
   @Post(':code/join')
   joinRoom(
     @CurrentUser() user: { id: string; username: string },

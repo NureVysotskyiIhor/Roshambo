@@ -55,9 +55,10 @@ export class GameService {
 
     if (winnerId) {
       await this.repository.updateParticipantScore(updated.roomId, winnerId);
+      this.store.incrementSessionScore(roomCode, winnerId);
     }
 
-    const scores = await this.repository.getParticipantScores(updated.roomId);
+    const scores = this.store.getSessionScores(roomCode);
     this.store.clear(roomCode);
 
     return {
@@ -67,7 +68,7 @@ export class GameService {
       playerTwoChoice: updated.playerTwoChoice,
       winnerId,
       isDraw: winnerId === null,
-      scores: Object.fromEntries(scores.map((s) => [s.userId, s.score])),
+      scores,
     };
   }
 
@@ -75,10 +76,8 @@ export class GameService {
     this.store.clear(roomCode);
   }
 
-  async resetScores(roomCode: string): Promise<void> {
-    const round = this.store.get(roomCode);
-    if (!round) return;
-    await this.repository.resetScores(round.roomId);
+  resetSessionScores(roomCode: string): void {
+    this.store.resetSessionScores(roomCode);
   }
 
   getRoundState(roomCode: string): ActiveRound | undefined {

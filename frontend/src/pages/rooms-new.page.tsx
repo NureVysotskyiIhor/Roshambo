@@ -30,6 +30,30 @@ import { parseError } from '../lib/parse-error'
 
 type ActiveTab = 'create' | 'join'
 
+const STATUS_BADGES: Record<
+  RoomResponseDto['status'],
+  { label: string; color: string; background: string; border: string }
+> = {
+  waiting: {
+    label: 'Waiting',
+    color: 'var(--color-draw)',
+    background: 'rgba(245, 158, 11, 0.15)',
+    border: '1px solid rgba(245, 158, 11, 0.4)',
+  },
+  in_progress: {
+    label: 'In progress',
+    color: 'var(--color-scissors)',
+    background: 'rgba(34, 197, 94, 0.15)',
+    border: '1px solid rgba(34, 197, 94, 0.4)',
+  },
+  finished: {
+    label: 'Finished',
+    color: 'var(--color-text-muted)',
+    background: 'rgba(255, 255, 255, 0.06)',
+    border: '1px solid var(--color-border)',
+  },
+}
+
 export function RoomsNewPage() {
   const navigate = useNavigate()
   const user = authStore((s) => s.user)
@@ -55,6 +79,46 @@ export function RoomsNewPage() {
 
   const currentRoom = sessionRoom ?? existingRoom ?? null
   const pageState = currentRoom ? 'waiting' : 'create'
+  const showWaiting = activeTab === 'create' && pageState === 'waiting' && !!currentRoom
+
+  const statusBadge = currentRoom
+    ? STATUS_BADGES[currentRoom.status] ?? STATUS_BADGES.waiting
+    : STATUS_BADGES.waiting
+
+  const tabSwitcher = (
+    <div
+      style={{
+        display: 'flex',
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        borderRadius: 10,
+        padding: 4,
+        marginBottom: 24,
+      }}
+    >
+      {(['create', 'join'] as const).map((tab) => (
+        <button
+          key={tab}
+          type="button"
+          onClick={() => handleTabChange(tab)}
+          style={{
+            flex: 1,
+            height: 36,
+            fontSize: 14,
+            fontWeight: 500,
+            border: 'none',
+            borderRadius: 8,
+            cursor: 'pointer',
+            fontFamily: 'var(--font-sans)',
+            transition: 'background-color 0.15s, color 0.15s',
+            backgroundColor: activeTab === tab ? 'var(--color-primary)' : 'transparent',
+            color: activeTab === tab ? 'white' : 'var(--color-text-muted)',
+          }}
+        >
+          {tab === 'create' ? 'Create room' : 'Join room'}
+        </button>
+      ))}
+    </div>
+  )
 
   const handleTabChange = (tab: ActiveTab) => {
     setActiveTab(tab)
@@ -89,7 +153,7 @@ export function RoomsNewPage() {
 
     const handlePlayerJoined = (data: { participant: ParticipantDto }) => {
       navigatedToGame.current = true
-      roomStore.getState().addParticipant(data.participant)
+      roomStore.getState().upsertParticipant(data.participant)
       void navigate({ to: '/rooms/$code', params: { code: currentRoom.code } })
     }
 
@@ -147,6 +211,7 @@ export function RoomsNewPage() {
     joinRoom.mutate(data.code, {
       onSuccess: (room) => {
         navigatedToGame.current = true
+        roomStore.getState().clearRoom()
         socket.connect()
         socket.emit(EVENTS.ROOM.JOIN, { code: room.code })
         void navigate({ to: '/rooms/$code', params: { code: room.code } })
@@ -165,7 +230,7 @@ export function RoomsNewPage() {
     )
   }
 
-  if (pageState === 'waiting' && currentRoom) {
+  if (showWaiting && currentRoom) {
     return (
       <div
         style={{
@@ -178,6 +243,8 @@ export function RoomsNewPage() {
         }}
       >
         <style>{`@keyframes pulse-dot { 0%, 100% { opacity: 1 } 50% { opacity: 0.3 } }`}</style>
+
+        {tabSwitcher}
 
         {/* Header */}
         <div className="flex items-center justify-between" style={{ marginBottom: 28 }}>
@@ -223,11 +290,11 @@ export function RoomsNewPage() {
             className="flex items-center"
             style={{
               gap: 8,
-              backgroundColor: 'rgba(245, 158, 11, 0.15)',
-              border: '1px solid rgba(245, 158, 11, 0.4)',
+              backgroundColor: statusBadge.background,
+              border: statusBadge.border,
               borderRadius: 20,
               padding: '6px 12px',
-              color: 'var(--color-draw)',
+              color: statusBadge.color,
             }}
           >
             <div
@@ -235,11 +302,11 @@ export function RoomsNewPage() {
                 width: 8,
                 height: 8,
                 borderRadius: '50%',
-                backgroundColor: 'var(--color-draw)',
+                backgroundColor: statusBadge.color,
                 animation: 'pulse-dot 1.5s ease-in-out infinite',
               }}
             />
-            <span style={{ fontSize: 13, fontWeight: 500 }}>Waiting</span>
+            <span style={{ fontSize: 13, fontWeight: 500 }}>{statusBadge.label}</span>
           </div>
         </div>
 
@@ -283,7 +350,7 @@ export function RoomsNewPage() {
     )
   }
 
-  // Create / Join form — tabs shown here only
+  // Create / Join form
   return (
     <div
       style={{
@@ -297,40 +364,7 @@ export function RoomsNewPage() {
     >
       <Logo />
 
-      {/* Tab switcher */}
-      <div
-        style={{
-          display: 'flex',
-          backgroundColor: 'rgba(255, 255, 255, 0.05)',
-          borderRadius: 10,
-          padding: 4,
-          marginTop: 24,
-          marginBottom: 24,
-        }}
-      >
-        {(['create', 'join'] as const).map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            onClick={() => handleTabChange(tab)}
-            style={{
-              flex: 1,
-              height: 36,
-              fontSize: 14,
-              fontWeight: 500,
-              border: 'none',
-              borderRadius: 8,
-              cursor: 'pointer',
-              fontFamily: 'var(--font-sans)',
-              transition: 'background-color 0.15s, color 0.15s',
-              backgroundColor: activeTab === tab ? 'var(--color-primary)' : 'transparent',
-              color: activeTab === tab ? 'white' : 'var(--color-text-muted)',
-            }}
-          >
-            {tab === 'create' ? 'Create room' : 'Join room'}
-          </button>
-        ))}
-      </div>
+      <div style={{ marginTop: 24 }}>{tabSwitcher}</div>
 
       {activeTab === 'create' ? (
         <>

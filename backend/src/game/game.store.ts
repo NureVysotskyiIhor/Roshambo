@@ -5,6 +5,7 @@ import type { ActiveRound, Choice } from './types/game.types.js';
 @Injectable()
 export class GameStore {
   private readonly rounds = new Map<string, ActiveRound>();
+  private readonly sessionScores = new Map<string, Record<string, number>>();
 
   init(roomCode: string, data: Omit<ActiveRound, 'playerOneChoice' | 'playerTwoChoice'>): void {
     this.rounds.set(roomCode, { ...data, playerOneChoice: null, playerTwoChoice: null });
@@ -33,5 +34,20 @@ export class GameStore {
 
   clear(roomCode: string): void {
     this.rounds.delete(roomCode);
+  }
+
+  incrementSessionScore(roomCode: string, userId: string): Record<string, number> {
+    const scores = this.sessionScores.get(roomCode) ?? {};
+    scores[userId] = (scores[userId] ?? 0) + 1;
+    this.sessionScores.set(roomCode, scores);
+    return scores;
+  }
+
+  getSessionScores(roomCode: string): Record<string, number> {
+    return this.sessionScores.get(roomCode) ?? {};
+  }
+
+  resetSessionScores(roomCode: string): void {
+    this.sessionScores.delete(roomCode);
   }
 }

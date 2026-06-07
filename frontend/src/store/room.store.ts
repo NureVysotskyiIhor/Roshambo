@@ -7,6 +7,7 @@ interface RoomState {
   setRoom: (room: RoomResponseDto) => void
   setParticipants: (participants: ParticipantDto[]) => void
   addParticipant: (participant: ParticipantDto) => void
+  upsertParticipant: (participant: ParticipantDto) => void
   clearRoom: () => void
 }
 
@@ -17,5 +18,14 @@ export const roomStore = create<RoomState>()((set) => ({
   setParticipants: (participants) => set({ participants }),
   addParticipant: (participant) =>
     set((state) => ({ participants: [...state.participants, participant] })),
+  upsertParticipant: (participant) =>
+    set((state) => {
+      const exists = state.participants.some((p) => p.userId === participant.userId)
+      return {
+        participants: exists
+          ? state.participants.map((p) => (p.userId === participant.userId ? participant : p))
+          : [...state.participants, participant],
+      }
+    }),
   clearRoom: () => set({ room: null, participants: [] }),
 }))

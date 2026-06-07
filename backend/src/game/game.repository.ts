@@ -33,18 +33,4 @@ export class GameRepository {
         ),
       );
   }
-
-  getParticipantScores(roomId: string): Promise<{ userId: string; score: number }[]> {
-    return db
-      .select({ userId: roomParticipants.userId, score: roomParticipants.score })
-      .from(roomParticipants)
-      .where(eq(roomParticipants.roomId, roomId));
-  }
-
-  async resetScores(roomId: string): Promise<void> {
-    await db
-      .update(roomParticipants)
-      .set({ score: 0 })
-      .where(eq(roomParticipants.roomId, roomId));
-  }
 }

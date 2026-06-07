@@ -3,6 +3,7 @@ import { RootLayout } from '../components/shared/root-layout.component'
 import { LoginPage } from '../pages/login.page'
 import { RegisterPage } from '../pages/register.page'
 import { RoomsNewPage } from '../pages/rooms-new.page'
+import { RoomPage } from '../pages/room.page'
 import { authStore } from '../store/auth.store'
 import { PATHS } from './paths'
 
@@ -54,14 +55,13 @@ const profileRoute = createRoute({
   component: () => null,
 })
 
-// Stub — real implementation in TASK_12
 const roomRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/rooms/$code',
   beforeLoad: () => {
     if (!authStore.getState().user) throw redirect({ to: PATHS.LOGIN })
   },
-  component: () => null,
+  component: RoomPage,
 })
 
 export const routeTree = rootRoute.addChildren([
