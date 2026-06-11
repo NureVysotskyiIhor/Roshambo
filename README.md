@@ -77,12 +77,13 @@ An online multiplayer Rock, Paper, Scissors game for two players — create a ro
    ```
    npm run migrate
    ```
-5. Start both backend and frontend in development mode:
+5. Start the dev environment (builds `@roshambo/shared` automatically, then runs it in watch mode alongside the backend and frontend):
    ```
    npm run dev
    ```
    Or individually:
    ```
+   npm run dev:shared
    npm run dev:backend
    npm run dev:frontend
    ```
