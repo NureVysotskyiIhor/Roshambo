@@ -25,4 +25,9 @@ export const roomSocket = {
     socket.on(EVENTS.ROOM.CLOSED, cb);
     return () => socket.off(EVENTS.ROOM.CLOSED, cb);
   },
+
+  onHostDisconnected: (cb: () => void) => {
+    socket.on(EVENTS.ROOM.HOST_DISCONNECTED, cb);
+    return () => socket.off(EVENTS.ROOM.HOST_DISCONNECTED, cb);
+  },
 };

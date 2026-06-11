@@ -11,6 +11,9 @@ export const roomsApi = {
   getParticipants: (roomId: string): Promise<ParticipantDto[]> =>
     apiClient.get<ParticipantDto[]>(`/rooms/${roomId}/participants`).then((r) => r.data),
 
+  getRoomByCode: (code: string): Promise<RoomResponseDto> =>
+    apiClient.get<RoomResponseDto>(`/rooms/by-code/${code}`).then((r) => r.data),
+
   createRoom: (data: { name?: string }): Promise<RoomResponseDto> =>
     apiClient.post<RoomResponseDto>('/rooms', data).then((r) => r.data),
 

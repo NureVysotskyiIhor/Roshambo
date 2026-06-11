@@ -22,6 +22,7 @@ export const LEAVE_REASON_MESSAGES: Record<string, string> = {
 interface UseGameSocketParams {
   roomCode: string;
   myId: string | undefined;
+  isHost: boolean;
   navigate: ReturnType<typeof useNavigate>;
   onOpponentDisconnected: () => void;
   onOpponentReconnected: () => void;
@@ -31,6 +32,7 @@ interface UseGameSocketParams {
 export function useGameSocket({
   roomCode,
   myId,
+  isHost,
   navigate,
   onOpponentDisconnected,
   onOpponentReconnected,
@@ -91,6 +93,12 @@ export function useGameSocket({
       toast.info(LEAVE_REASON_MESSAGES[data.reason] ?? 'Opponent disconnected');
     });
 
+    const offHostDisconnected = roomSocket.onHostDisconnected(() => {
+      if (isHost) return;
+      onOpponentDisconnected();
+      toast.info('Host disconnected. Waiting for reconnect...');
+    });
+
     const offClosed = roomSocket.onClosed((data) => {
       toast.info(LEAVE_REASON_MESSAGES[data.reason] ?? 'Host disconnected');
       socket.disconnect();
@@ -113,8 +121,9 @@ export function useGameSocket({
       offRestartRequested();
       offPlayerJoined();
       offOpponentLeft();
+      offHostDisconnected();
       offClosed();
       socket.off(EVENTS.ERROR, handleError);
     };
-  }, [navigate, myId, onOpponentDisconnected, onOpponentReconnected, onWaitingForRestart]);
+  }, [navigate, myId, isHost, onOpponentDisconnected, onOpponentReconnected, onWaitingForRestart]);
 }

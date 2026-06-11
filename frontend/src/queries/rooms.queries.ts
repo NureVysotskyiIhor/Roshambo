@@ -13,6 +13,13 @@ export const useMyRoom = () =>
     queryFn: roomsApi.getMyRoom,
   });
 
+export const useRoomByCode = (code: string) =>
+  useQuery({
+    queryKey: roomKeys.detail(code),
+    queryFn: () => roomsApi.getRoomByCode(code),
+    enabled: !!code,
+  });
+
 export const useCreateRoom = () => {
   const qc = useQueryClient();
   return useMutation({

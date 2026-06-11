@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from '@tanstack/react-router';
-import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { authStore } from '../store/auth.store';
 import { roomStore } from '../store/room.store';
 import { gameStore } from '../store/game.store';
 import { roomsApi } from '../api/rooms.api';
-import { roomKeys } from '../queries/rooms.queries';
+import { useRoomByCode } from '../queries/rooms.queries';
 import { Loader } from '../components/ui/loader.component';
 import { PATHS } from '../routes/paths';
 import { PlayerColumn } from '../components/game/player-column.component';
@@ -25,13 +24,8 @@ export function RoomPage() {
   const myUser = authStore((s) => s.user);
   const myId = myUser?.id;
 
-  const storeRoom = roomStore((s) => s.room);
-  const { data: fetchedRoom, isLoading } = useQuery({
-    queryKey: roomKeys.my(),
-    queryFn: roomsApi.getMyRoom,
-    enabled: !storeRoom,
-  });
-  const room = storeRoom ?? fetchedRoom ?? null;
+  const { data: fetchedRoom, isLoading } = useRoomByCode(code);
+  const room = fetchedRoom ?? null;
 
   const [opponentDisconnected, setOpponentDisconnected] = useState(false);
 
@@ -67,6 +61,7 @@ export function RoomPage() {
   useGameSocket({
     roomCode: code,
     myId,
+    isHost: !!room && room.creatorId === myId,
     navigate,
     onOpponentDisconnected: () => setOpponentDisconnected(true),
     onOpponentReconnected: () => setOpponentDisconnected(false),

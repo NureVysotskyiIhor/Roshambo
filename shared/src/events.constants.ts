@@ -5,6 +5,7 @@ export const EVENTS = {
     PLAYER_JOINED: 'room:player_joined',
     LEFT: 'room:left',
     OPPONENT_LEFT: 'room:opponent_left',
+    HOST_DISCONNECTED: 'room:host_disconnected',
     CLOSED: 'room:closed',
   },
   GAME: {

@@ -37,6 +37,8 @@ export class AppGateway implements OnGatewayDisconnect, OnGatewayInit {
   server!: Server;
 
   private readonly restartRequests = new Map<string, Set<string>>();
+  private readonly disconnectTimers = new Map<string, NodeJS.Timeout>();
+  private static readonly RECONNECT_GRACE_MS = 5000;
 
   constructor(
     private readonly roomsService: RoomsService,
@@ -67,6 +69,25 @@ export class AppGateway implements OnGatewayDisconnect, OnGatewayInit {
     });
   }
 
+  private cancelDisconnectTimer(roomCode: string, userId: string): void {
+    const key = `${roomCode}:${userId}`;
+    const timer = this.disconnectTimers.get(key);
+    if (timer) {
+      clearTimeout(timer);
+      this.disconnectTimers.delete(key);
+    }
+  }
+
+  private cancelRoomDisconnectTimers(roomCode: string): void {
+    const prefix = `${roomCode}:`;
+    for (const key of this.disconnectTimers.keys()) {
+      if (key.startsWith(prefix)) {
+        clearTimeout(this.disconnectTimers.get(key));
+        this.disconnectTimers.delete(key);
+      }
+    }
+  }
+
   private async handlePlayerLeave(
     client: AppSocket,
     user: { id: string; username: string },
@@ -75,6 +96,38 @@ export class AppGateway implements OnGatewayDisconnect, OnGatewayInit {
     const roomCode = client.data.roomCode;
     if (!roomCode) return;
 
+    const room = await this.roomsService.findByCode(roomCode);
+    if (!room) return;
+
+    void client.leave(roomCode);
+    client.data.roomCode = undefined;
+
+    this.cancelDisconnectTimer(roomCode, user.id);
+
+    if (!voluntary) {
+      // Defer cleanup — give the client a grace period to reconnect
+      // (e.g. a page reload) before tearing down the room/round.
+      if (user.id === room.creatorId) {
+        this.server.to(roomCode).emit(EVENTS.ROOM.HOST_DISCONNECTED, {});
+      }
+
+      const key = `${roomCode}:${user.id}`;
+      const timer = setTimeout(() => {
+        this.disconnectTimers.delete(key);
+        void this.finalizePlayerLeave(roomCode, user, voluntary);
+      }, AppGateway.RECONNECT_GRACE_MS);
+      this.disconnectTimers.set(key, timer);
+      return;
+    }
+
+    await this.finalizePlayerLeave(roomCode, user, voluntary);
+  }
+
+  private async finalizePlayerLeave(
+    roomCode: string,
+    user: { id: string; username: string },
+    voluntary: boolean,
+  ): Promise<void> {
     const room = await this.roomsService.findByCode(roomCode);
     if (!room) return;
 
@@ -109,14 +162,13 @@ export class AppGateway implements OnGatewayDisconnect, OnGatewayInit {
         reason: voluntary ? 'opponent_left' : 'opponent_disconnected',
       });
     }
-
-    void client.leave(roomCode);
-    client.data.roomCode = undefined;
   }
 
   private async closeRoom(roomCode: string): Promise<void> {
     const room = await this.roomsService.findByCode(roomCode);
     if (!room) return;
+
+    this.cancelRoomDisconnectTimers(roomCode);
 
     const participants = await this.roomsService.findParticipants(room.id);
     for (const p of participants) {
@@ -201,6 +253,8 @@ export class AppGateway implements OnGatewayDisconnect, OnGatewayInit {
     }
 
     if (room.creatorId === user.id && room.status !== 'finished') {
+      this.cancelDisconnectTimer(data.code, user.id);
+
       await this.roomsService.setParticipantActive(room.id, user.id);
 
       if (room.status === 'in_progress') {
@@ -220,6 +274,15 @@ export class AppGateway implements OnGatewayDisconnect, OnGatewayInit {
         room,
         participant: { userId: user.id, username: user.username },
       });
+
+      const userProfile = await this.usersService.getMe(user.id);
+      client.to(data.code).emit(EVENTS.ROOM.PLAYER_JOINED, {
+        participant: {
+          userId: user.id,
+          username: user.username,
+          avatarUrl: userProfile.avatarUrl,
+        },
+      });
       return;
     }
 
@@ -232,6 +295,8 @@ export class AppGateway implements OnGatewayDisconnect, OnGatewayInit {
         client.emit(EVENTS.ERROR, { message: 'Room is not available' });
         return;
       }
+
+      this.cancelDisconnectTimer(data.code, user.id);
 
       await this.roomsService.setParticipantActive(room.id, user.id);
 
@@ -251,8 +316,12 @@ export class AppGateway implements OnGatewayDisconnect, OnGatewayInit {
         },
       });
 
-      this.gameService.initRound(data.code, room.id, room.creatorId, user.id);
-      this.server.to(data.code).emit(EVENTS.GAME.STARTED, {});
+      // Round survived the grace period (e.g. quick reload) — don't reset
+      // it, only a real fresh start needs a new round + GAME.STARTED.
+      if (!this.gameService.getRoundState(data.code)) {
+        this.gameService.initRound(data.code, room.id, room.creatorId, user.id);
+        this.server.to(data.code).emit(EVENTS.GAME.STARTED, {});
+      }
       return;
     }
 

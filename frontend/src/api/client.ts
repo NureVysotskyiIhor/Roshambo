@@ -1,6 +1,7 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { queryClient } from '../lib/query-client';
 import { authStore } from '../store/auth.store';
+import { router } from '../routes';
 
 const BASE_URL = import.meta.env.VITE_API_URL as string;
 
@@ -31,8 +32,15 @@ apiClient.interceptors.response.use(
         return await apiClient(originalRequest);
       } catch {
         authStore.getState().clearUser();
+        if (originalRequest.url?.includes('/users/me')) {
+          // Bootstrap check — useGetMe catches this and resolves with
+          // data: null. Don't clear the query cache or navigate out
+          // from under the in-flight ['me'] query.
+          return Promise.reject(error);
+        }
         queryClient.clear();
-        window.location.href = '/login';
+        void router.navigate({ to: '/login' });
+        return Promise.reject(error)
       }
     }
     return Promise.reject(error instanceof Error ? error : new Error(String(error)));

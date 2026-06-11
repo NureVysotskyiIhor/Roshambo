@@ -101,6 +101,12 @@ export class RoomsService {
     return room ? this.mapper.toResponse(room) : null;
   }
 
+  async getRoomByCode(code: string): Promise<RoomResponseDto> {
+    const room = await this.repository.findByCode(code);
+    if (!room) throw new NotFoundException('Room not found');
+    return this.mapper.toResponse(room);
+  }
+
   async updateStatus(
     roomId: string,
     status: 'waiting' | 'in_progress' | 'finished',

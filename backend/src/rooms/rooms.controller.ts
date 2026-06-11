@@ -36,6 +36,11 @@ export class RoomsController {
     return this.service.getParticipants(roomId);
   }
 
+  @Get('by-code/:code')
+  getByCode(@Param('code') code: string) {
+    return this.service.getRoomByCode(code);
+  }
+
   @Post(':code/join')
   joinRoom(
     @CurrentUser() user: { id: string; username: string },
