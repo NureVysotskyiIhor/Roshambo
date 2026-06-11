@@ -1,7 +1,26 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { authApi } from '../api/auth.api';
+import { usersApi } from '../api/users.api';
 import { authStore } from '../store/auth.store';
 import { userKeys } from './users.queries';
+
+export function useGetMe() {
+  return useQuery({
+    queryKey: ['me'],
+    queryFn: async () => {
+      try {
+        const user = await usersApi.getMe();
+        authStore.getState().setUser(user);
+        return user;
+      } catch {
+        authStore.getState().clearUser();
+        return null;
+      }
+    },
+    retry: false,
+    staleTime: Infinity,
+  });
+}
 
 export const useLogin = () => {
   const qc = useQueryClient();
