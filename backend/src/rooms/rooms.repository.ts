@@ -1,8 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { and, eq, isNull } from 'drizzle-orm';
-import { db } from '../db/index.js';
+import { DRIZZLE } from '../db/db.constants.js';
 import { roomParticipants, rooms, users } from '../db/schema.js';
 import type {
+  Database,
   ParticipantWithUser,
   RoomInsert,
   RoomParticipantRecord,
@@ -15,14 +16,16 @@ type CreateRoomData = Pick<RoomInsert, 'code' | 'creatorId'> & {
 
 @Injectable()
 export class RoomsRepository {
+  constructor(@Inject(DRIZZLE) private readonly db: Database) {}
+
   findByCode(code: string): Promise<RoomRecord | null> {
-    return db.query.rooms
+    return this.db.query.rooms
       .findFirst({ where: eq(rooms.code, code) })
       .then((row) => row ?? null);
   }
 
   findByCreatorId(creatorId: string): Promise<RoomRecord | null> {
-    return db.query.rooms
+    return this.db.query.rooms
       .findFirst({
         where: eq(rooms.creatorId, creatorId),
         orderBy: (rooms, { desc }) => [desc(rooms.createdAt)],
@@ -31,7 +34,7 @@ export class RoomsRepository {
   }
 
   create(data: CreateRoomData): Promise<RoomRecord> {
-    return db.transaction(async (tx) => {
+    return this.db.transaction(async (tx) => {
       const [room] = await tx
         .insert(rooms)
         .values({ code: data.code, creatorId: data.creatorId, name: data.name })
@@ -46,7 +49,7 @@ export class RoomsRepository {
   }
 
   joinRoom(roomId: string, userId: string): Promise<RoomRecord> {
-    return db.transaction(async (tx) => {
+    return this.db.transaction(async (tx) => {
       await tx
         .insert(roomParticipants)
         .values({ roomId, userId, role: 'player' });
@@ -64,7 +67,7 @@ export class RoomsRepository {
     roomId: string,
     status: 'waiting' | 'in_progress' | 'finished',
   ): Promise<RoomRecord> {
-    const [updated] = await db
+    const [updated] = await this.db
       .update(rooms)
       .set({ status })
       .where(eq(rooms.id, roomId))
@@ -74,7 +77,7 @@ export class RoomsRepository {
   }
 
   async updateName(roomId: string, name: string): Promise<RoomRecord> {
-    const [updated] = await db
+    const [updated] = await this.db
       .update(rooms)
       .set({ name })
       .where(eq(rooms.id, roomId))
@@ -84,13 +87,13 @@ export class RoomsRepository {
   }
 
   findParticipants(roomId: string): Promise<RoomParticipantRecord[]> {
-    return db.query.roomParticipants.findMany({
+    return this.db.query.roomParticipants.findMany({
       where: eq(roomParticipants.roomId, roomId),
     });
   }
 
   findParticipantsWithUsers(roomId: string): Promise<ParticipantWithUser[]> {
-    return db
+    return this.db
       .select({
         userId: roomParticipants.userId,
         username: users.username,
@@ -110,7 +113,7 @@ export class RoomsRepository {
   }
 
   async setParticipantLeft(roomId: string, userId: string): Promise<void> {
-    await db
+    await this.db
       .update(roomParticipants)
       .set({ leftAt: new Date() })
       .where(
@@ -122,7 +125,7 @@ export class RoomsRepository {
   }
 
   async setParticipantActive(roomId: string, userId: string): Promise<void> {
-    await db
+    await this.db
       .update(roomParticipants)
       .set({ leftAt: null })
       .where(
@@ -137,7 +140,7 @@ export class RoomsRepository {
     roomId: string,
     userId: string,
   ): Promise<RoomParticipantRecord | null> {
-    return db.query.roomParticipants
+    return this.db.query.roomParticipants
       .findFirst({
         where: and(
           eq(roomParticipants.roomId, roomId),

@@ -1,4 +1,8 @@
+import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { roomParticipants, rooms, rounds, users } from './schema.js';
+import type * as schema from './schema.js';
+
+export type Database = NodePgDatabase<typeof schema>;
 
 export type UserRecord = typeof users.$inferSelect;
 export type RoomRecord = typeof rooms.$inferSelect;

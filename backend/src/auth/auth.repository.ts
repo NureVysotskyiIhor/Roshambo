@@ -1,8 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
-import { db } from '../db/index.js';
+import { DRIZZLE } from '../db/db.constants.js';
 import { users } from '../db/schema.js';
-import { UserInsert, UserRecord } from '../db/types.js';
+import type { Database, UserInsert, UserRecord } from '../db/types.js';
 
 export type { UserRecord };
 
@@ -16,20 +16,22 @@ type CreateUserData = Pick<
 
 @Injectable()
 export class AuthRepository {
+  constructor(@Inject(DRIZZLE) private readonly db: Database) {}
+
   findByUsername(username: string): Promise<UserRecord | null> {
-    return db.query.users
+    return this.db.query.users
       .findFirst({ where: eq(users.username, username) })
       .then((row) => row ?? null);
   }
 
   findById(id: string): Promise<UserRecord | null> {
-    return db.query.users
+    return this.db.query.users
       .findFirst({ where: eq(users.id, id) })
       .then((row) => row ?? null);
   }
 
   async create(data: CreateUserData): Promise<UserRecord> {
-    const [row] = await db
+    const [row] = await this.db
       .insert(users)
       .values({
         username: data.username,
