@@ -73,8 +73,17 @@ Stores active round choices: roomCode → { playerOneChoice, playerTwoChoice }
 Cleared after round completes and is written to DB
 
 ## Error Handling
-- HTTP: throw NestJS built-in exceptions (NotFoundException, UnauthorizedException)
-- WS: throw WsException, caught by WsExceptionFilter → emits error event
+- Services/Repositories/Store: throw domain exceptions from
+  shared/exceptions/domain.exception.ts (NotFoundError, BadRequestError,
+  ConflictError, UnauthorizedError, ForbiddenError) — never NestJS
+  HttpException subclasses or WsException. Keeps business logic
+  transport-agnostic.
+- HTTP: HttpExceptionFilter maps domain exceptions to HTTP status codes
+- WS: WsExceptionFilter maps domain exceptions (and WsException from
+  guards) to an `error` event
+- Guards (JwtAuthGuard, WsAuthGuard) may still throw transport-specific
+  exceptions (UnauthorizedException, WsException) — they ARE the
+  transport boundary
 - Always validate DTO + check business context in Service
 
 ## Environment Variables

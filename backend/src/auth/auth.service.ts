@@ -1,19 +1,18 @@
-import {
-  ConflictException,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import type { Response } from 'express';
+import {
+  ConflictError,
+  UnauthorizedError,
+} from '../shared/exceptions/domain.exception.js';
 import { AuthMapper } from './auth.mapper.js';
 import { AuthRepository } from './auth.repository.js';
 import { AuthResponseDto } from './dto/auth-response.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 import { RegisterDto } from './dto/register.dto.js';
 
-type Tokens = { accessToken: string; refreshToken: string };
+export type Tokens = { accessToken: string; refreshToken: string };
 type AuthResult = { user: AuthResponseDto; tokens: Tokens };
 
 @Injectable()
@@ -28,7 +27,7 @@ export class AuthService {
   async register(dto: RegisterDto): Promise<AuthResult> {
     const existing = await this.repository.findByUsername(dto.username);
     if (existing) {
-      throw new ConflictException('Username already taken');
+      throw new ConflictError('Username already taken');
     }
 
     const password = await bcrypt.hash(dto.password, 10);
@@ -49,7 +48,7 @@ export class AuthService {
   async login(dto: LoginDto): Promise<AuthResult> {
     const userRecord = await this.repository.findByUsername(dto.username);
     if (!userRecord) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedError('Invalid credentials');
     }
 
     const passwordValid = await bcrypt.compare(
@@ -57,7 +56,7 @@ export class AuthService {
       userRecord.password,
     );
     if (!passwordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedError('Invalid credentials');
     }
 
     const user = this.mapper.toResponse(userRecord);
@@ -89,34 +88,14 @@ export class AuthService {
         secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
       });
     } catch {
-      throw new UnauthorizedException('Invalid refresh token');
+      throw new UnauthorizedError('Invalid refresh token');
     }
 
     const userRecord = await this.repository.findById(payload.sub);
     if (!userRecord) {
-      throw new UnauthorizedException('User not found');
+      throw new UnauthorizedError('User not found');
     }
 
     return this.generateTokens(userRecord.id, userRecord.username);
-  }
-
-  setAuthCookies(res: Response, tokens: Tokens): void {
-    res.cookie('accessToken', tokens.accessToken, {
-      httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
-      maxAge: 15 * 60 * 1000,
-    });
-    res.cookie('refreshToken', tokens.refreshToken, {
-      httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
-  }
-
-  clearAuthCookies(res: Response): void {
-    res.clearCookie('accessToken');
-    res.clearCookie('refreshToken');
   }
 }

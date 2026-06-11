@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { WsException } from '@nestjs/websockets';
+import {
+  ConflictError,
+  ForbiddenError,
+} from '../shared/exceptions/domain.exception.js';
 import type { ActiveRound, Choice } from './types/game.types.js';
 
 @Injectable()
@@ -27,7 +30,7 @@ export class GameStore {
     if (!round) return;
 
     if (round.playerOneChoice !== null && round.playerTwoChoice !== null) {
-      throw new WsException('Round already completed');
+      throw new ConflictError('Round already completed');
     }
 
     if (round.playerOneId === userId) {
@@ -35,7 +38,7 @@ export class GameStore {
     } else if (round.playerTwoId === userId) {
       round.playerTwoChoice = choice;
     } else {
-      throw new WsException('Not a player in this room');
+      throw new ForbiddenError('Not a player in this room');
     }
   }
 

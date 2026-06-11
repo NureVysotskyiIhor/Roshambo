@@ -1,8 +1,9 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { DRIZZLE } from '../db/db.constants.js';
 import { users } from '../db/schema.js';
 import type { Database, UserInsert, UserRecord } from '../db/types.js';
+import { NotFoundError } from '../shared/exceptions/domain.exception.js';
 
 type UpdateUserData = Partial<
   Pick<UserInsert, 'username' | 'password' | 'email' | 'avatarUrl'>
@@ -30,7 +31,7 @@ export class UsersRepository {
       .set(data)
       .where(eq(users.id, id))
       .returning();
-    if (!updated) throw new NotFoundException('User not found');
+    if (!updated) throw new NotFoundError('User not found');
     return updated;
   }
 }

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { WsException } from '@nestjs/websockets';
+import { BadRequestError } from '../shared/exceptions/domain.exception.js';
 import { GameRepository } from './game.repository.js';
 import { GameStore } from './game.store.js';
 import type {
@@ -31,7 +31,7 @@ export class GameService {
     choice: Choice,
   ): Promise<RoundResultPayload | null> {
     const round = this.store.get(roomCode);
-    if (!round) throw new WsException('Round not initialized');
+    if (!round) throw new BadRequestError('Round not initialized');
 
     this.store.setChoice(roomCode, userId, choice);
 

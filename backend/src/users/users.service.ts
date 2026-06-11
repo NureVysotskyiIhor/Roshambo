@@ -1,9 +1,9 @@
 import * as bcrypt from 'bcrypt';
+import { Injectable } from '@nestjs/common';
 import {
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+  ConflictError,
+  NotFoundError,
+} from '../shared/exceptions/domain.exception.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 import { UserResponseDto } from './dto/user-response.dto.js';
 import { UsersMapper } from './users.mapper.js';
@@ -18,7 +18,7 @@ export class UsersService {
 
   async getMe(userId: string): Promise<UserResponseDto> {
     const user = await this.repository.findById(userId);
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new NotFoundError('User not found');
     return this.mapper.toResponse(user);
   }
 
@@ -28,7 +28,7 @@ export class UsersService {
     if (dto.username !== undefined) {
       const existing = await this.repository.findByUsername(dto.username);
       if (existing && existing.id !== userId) {
-        throw new ConflictException('Username already taken');
+        throw new ConflictError('Username already taken');
       }
       updateData.username = dto.username;
     }
@@ -39,7 +39,7 @@ export class UsersService {
 
     if (Object.keys(updateData).length === 0) {
       const user = await this.repository.findById(userId);
-      if (!user) throw new NotFoundException('User not found');
+      if (!user) throw new NotFoundError('User not found');
       return this.mapper.toResponse(user);
     }
 

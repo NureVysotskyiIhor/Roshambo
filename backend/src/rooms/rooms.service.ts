@@ -1,12 +1,12 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { nanoid } from 'nanoid';
 import type { ParticipantDto } from '@roshambo/shared';
 import type { RoomParticipantRecord } from '../db/types.js';
+import {
+  BadRequestError,
+  ForbiddenError,
+  NotFoundError,
+} from '../shared/exceptions/domain.exception.js';
 import { CreateRoomDto } from './dto/create-room.dto.js';
 import { RoomResponseDto } from './dto/room-response.dto.js';
 import { UpdateRoomDto } from './dto/update-room.dto.js';
@@ -36,7 +36,7 @@ export class RoomsService {
   ): Promise<RoomResponseDto> {
     const myRoom = await this.repository.findByCreatorId(userId);
     if (myRoom && myRoom.status !== 'finished') {
-      throw new BadRequestException('You already have an active room');
+      throw new BadRequestError('You already have an active room');
     }
 
     let code: string;
@@ -54,15 +54,15 @@ export class RoomsService {
 
   async joinRoom(userId: string, code: string): Promise<RoomResponseDto> {
     const room = await this.repository.findByCode(code);
-    if (!room) throw new NotFoundException('Room not found');
+    if (!room) throw new NotFoundError('Room not found');
     if (room.status !== 'waiting')
-      throw new BadRequestException('Room is not available');
+      throw new BadRequestError('Room is not available');
     if (room.creatorId === userId)
-      throw new BadRequestException('Cannot join your own room');
+      throw new BadRequestError('Cannot join your own room');
 
     const myRoom = await this.repository.findByCreatorId(userId);
     if (myRoom && myRoom.status === 'in_progress') {
-      throw new BadRequestException('You already have an active game');
+      throw new BadRequestError('You already have an active game');
     }
     if (myRoom && myRoom.status === 'waiting') {
       await this.repository.setParticipantLeft(myRoom.id, userId);
@@ -88,9 +88,9 @@ export class RoomsService {
     dto: UpdateRoomDto,
   ): Promise<RoomResponseDto> {
     const room = await this.repository.findByCode(code);
-    if (!room) throw new NotFoundException('Room not found');
+    if (!room) throw new NotFoundError('Room not found');
     if (room.creatorId !== userId)
-      throw new ForbiddenException('Not room creator');
+      throw new ForbiddenError('Not room creator');
 
     const updatedRoom = await this.repository.updateName(room.id, dto.name);
     return this.mapper.toResponse(updatedRoom);
@@ -103,7 +103,7 @@ export class RoomsService {
 
   async getRoomByCode(code: string): Promise<RoomResponseDto> {
     const room = await this.repository.findByCode(code);
-    if (!room) throw new NotFoundException('Room not found');
+    if (!room) throw new NotFoundError('Room not found');
     return this.mapper.toResponse(room);
   }
 

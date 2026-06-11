@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { and, eq, isNull } from 'drizzle-orm';
 import { DRIZZLE } from '../db/db.constants.js';
 import { roomParticipants, rooms, users } from '../db/schema.js';
@@ -9,6 +9,7 @@ import type {
   RoomParticipantRecord,
   RoomRecord,
 } from '../db/types.js';
+import { NotFoundError } from '../shared/exceptions/domain.exception.js';
 
 type CreateRoomData = Pick<RoomInsert, 'code' | 'creatorId'> & {
   name?: string;
@@ -58,7 +59,7 @@ export class RoomsRepository {
         .set({ status: 'in_progress' })
         .where(eq(rooms.id, roomId))
         .returning();
-      if (!updated) throw new NotFoundException('Room not found');
+      if (!updated) throw new NotFoundError('Room not found');
       return updated;
     });
   }
@@ -72,7 +73,7 @@ export class RoomsRepository {
       .set({ status })
       .where(eq(rooms.id, roomId))
       .returning();
-    if (!updated) throw new NotFoundException('Room not found');
+    if (!updated) throw new NotFoundError('Room not found');
     return updated;
   }
 
@@ -82,7 +83,7 @@ export class RoomsRepository {
       .set({ name })
       .where(eq(rooms.id, roomId))
       .returning();
-    if (!updated) throw new NotFoundException('Room not found');
+    if (!updated) throw new NotFoundError('Room not found');
     return updated;
   }
 

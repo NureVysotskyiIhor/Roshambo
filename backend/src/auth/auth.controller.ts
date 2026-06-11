@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { JwtAuthGuard } from '../shared/guards/jwt-auth.guard.js';
+import { clearAuthCookies, setAuthCookies } from './auth-cookie.util.js';
 import { AuthService } from './auth.service.js';
 import { LoginDto } from './dto/login.dto.js';
 import { RegisterDto } from './dto/register.dto.js';
@@ -23,7 +24,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const { user, tokens } = await this.authService.register(dto);
-    this.authService.setAuthCookies(res, tokens);
+    setAuthCookies(res, tokens);
     return user;
   }
 
@@ -33,14 +34,14 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const { user, tokens } = await this.authService.login(dto);
-    this.authService.setAuthCookies(res, tokens);
+    setAuthCookies(res, tokens);
     return user;
   }
 
   @Post('logout')
   @UseGuards(JwtAuthGuard)
   logout(@Res({ passthrough: true }) res: Response) {
-    this.authService.clearAuthCookies(res);
+    clearAuthCookies(res);
     return { ok: true };
   }
 
@@ -55,7 +56,7 @@ export class AuthController {
     }
 
     const tokens = await this.authService.refreshTokens(refreshToken);
-    this.authService.setAuthCookies(res, tokens);
+    setAuthCookies(res, tokens);
     return { ok: true };
   }
 }
