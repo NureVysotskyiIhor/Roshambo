@@ -85,6 +85,14 @@ export class GameService {
     this.store.resetSessionScores(roomCode);
   }
 
+  requestRestart(roomCode: string, userId: string): boolean {
+    return this.store.requestRestart(roomCode, userId);
+  }
+
+  clearRestartRequests(roomCode: string): void {
+    this.store.clearRestartRequests(roomCode);
+  }
+
   getRoundState(roomCode: string): ActiveRound | undefined {
     return this.store.get(roomCode);
   }

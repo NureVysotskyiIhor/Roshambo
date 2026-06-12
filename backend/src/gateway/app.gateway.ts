@@ -36,7 +36,6 @@ export class AppGateway implements OnGatewayDisconnect, OnGatewayInit {
   @WebSocketServer()
   server!: Server;
 
-  private readonly restartRequests = new Map<string, Set<string>>();
   private readonly disconnectTimers = new Map<string, NodeJS.Timeout>();
   private static readonly RECONNECT_GRACE_MS = 5000;
 
@@ -131,14 +130,14 @@ export class AppGateway implements OnGatewayDisconnect, OnGatewayInit {
     const room = await this.roomsService.findByCode(roomCode);
     if (!room) return;
 
-    this.restartRequests.delete(roomCode);
+    this.gameService.clearRestartRequests(roomCode);
 
     if (user.id === room.creatorId) {
       await this.roomsService.setParticipantLeft(room.id, user.id);
 
-      const participants = await this.roomsService.findParticipants(room.id);
-      const activeOpponent = participants.find(
-        (p) => p.userId !== room.creatorId && p.leftAt === null,
+      const activeOpponent = await this.roomsService.findActiveOpponent(
+        room.id,
+        room.creatorId,
       );
       if (activeOpponent) {
         await this.roomsService.setParticipantLeft(
@@ -164,168 +163,90 @@ export class AppGateway implements OnGatewayDisconnect, OnGatewayInit {
     }
   }
 
-  private async closeRoom(roomCode: string): Promise<void> {
-    const room = await this.roomsService.findByCode(roomCode);
-    if (!room) return;
-
-    this.cancelRoomDisconnectTimers(roomCode);
-
-    const participants = await this.roomsService.findParticipants(room.id);
-    for (const p of participants) {
-      if (p.leftAt === null) {
-        await this.roomsService.setParticipantLeft(room.id, p.userId);
-      }
-    }
-
-    await this.roomsService.updateStatus(room.id, 'finished');
-    this.gameService.resetRound(roomCode);
-    this.gameService.resetSessionScores(roomCode);
-    this.server.to(roomCode).emit(EVENTS.ROOM.CLOSED, { reason: 'host_left' });
-    this.restartRequests.delete(roomCode);
-  }
-
   @SubscribeMessage(EVENTS.ROOM.JOIN)
   async handleRoomJoin(
     @ConnectedSocket() client: AppSocket,
     @MessageBody() data: { code: string },
     @WsCurrentUser() user: { id: string; username: string },
   ): Promise<void> {
-    const room = await this.roomsService.findByCode(data.code);
-    if (!room) {
-      client.emit(EVENTS.ERROR, { message: 'Room not found' });
-      return;
-    }
-
     if (client.data.roomCode === data.code) {
-      void client.join(data.code);
-      client.emit(EVENTS.ROOM.JOINED, {
-        room,
-        participant: { userId: user.id, username: user.username },
-      });
-      return;
-    }
-
-    if (room.status === 'waiting' && room.creatorId !== user.id) {
-      const myActiveRoom = await this.roomsService.findActiveRoomByCreator(
-        user.id,
-      );
-      if (myActiveRoom) {
-        if (myActiveRoom.status === 'in_progress') {
-          client.emit(EVENTS.ERROR, {
-            message: 'You already have an active game',
-          });
-          return;
-        }
-        await this.closeRoom(myActiveRoom.code);
-        void client.leave(myActiveRoom.code);
-        client.data.roomCode = undefined;
-      }
-
-      try {
-        await this.roomsService.joinRoom(user.id, data.code);
-      } catch (e: unknown) {
-        const message = e instanceof Error ? e.message : 'Join failed';
-        client.emit(EVENTS.ERROR, { message });
+      const room = await this.roomsService.findByCode(data.code);
+      if (!room) {
+        client.emit(EVENTS.ERROR, { message: 'Room not found' });
         return;
       }
 
-      await this.roomsService.setParticipantActive(room.id, user.id);
-
       void client.join(data.code);
-      client.data.roomCode = data.code;
-
       client.emit(EVENTS.ROOM.JOINED, {
         room,
         participant: { userId: user.id, username: user.username },
       });
-      const userProfile = await this.usersService.getMe(user.id);
-      client.to(data.code).emit(EVENTS.ROOM.PLAYER_JOINED, {
-        participant: {
-          userId: user.id,
-          username: user.username,
-          avatarUrl: userProfile.avatarUrl,
-        },
-      });
-
-      this.gameService.initRound(data.code, room.id, room.creatorId, user.id);
-      this.server.to(data.code).emit(EVENTS.GAME.STARTED, {});
       return;
     }
 
-    if (room.creatorId === user.id && room.status !== 'finished') {
-      this.cancelDisconnectTimer(data.code, user.id);
+    const result = await this.roomsService.resolveJoin(user.id, data.code);
 
-      await this.roomsService.setParticipantActive(room.id, user.id);
-
-      if (room.status === 'in_progress') {
-        const participants = await this.roomsService.findParticipants(room.id);
-        const activeOpponent = participants.find(
-          (p) => p.userId !== room.creatorId && p.leftAt === null,
-        );
-        if (!activeOpponent) {
-          await this.roomsService.updateStatus(room.id, 'waiting');
-        }
-      }
-
-      void client.join(data.code);
-      client.data.roomCode = data.code;
-
-      client.emit(EVENTS.ROOM.JOINED, {
-        room,
-        participant: { userId: user.id, username: user.username },
-      });
-
-      const userProfile = await this.usersService.getMe(user.id);
-      client.to(data.code).emit(EVENTS.ROOM.PLAYER_JOINED, {
-        participant: {
-          userId: user.id,
-          username: user.username,
-          avatarUrl: userProfile.avatarUrl,
-        },
-      });
-      return;
-    }
-
-    if (room.status === 'in_progress' && room.creatorId !== user.id) {
-      const participant = await this.roomsService.findParticipant(
-        room.id,
-        user.id,
-      );
-      if (!participant) {
+    switch (result.type) {
+      case 'not_found':
+        client.emit(EVENTS.ERROR, { message: 'Room not found' });
+        return;
+      case 'active_game_conflict':
+        client.emit(EVENTS.ERROR, {
+          message: 'You already have an active game',
+        });
+        return;
+      case 'unavailable':
         client.emit(EVENTS.ERROR, { message: 'Room is not available' });
         return;
-      }
-
-      this.cancelDisconnectTimer(data.code, user.id);
-
-      await this.roomsService.setParticipantActive(room.id, user.id);
-
-      void client.join(data.code);
-      client.data.roomCode = data.code;
-
-      client.emit(EVENTS.ROOM.JOINED, {
-        room,
-        participant: { userId: user.id, username: user.username },
-      });
-      const userProfile = await this.usersService.getMe(user.id);
-      client.to(data.code).emit(EVENTS.ROOM.PLAYER_JOINED, {
-        participant: {
-          userId: user.id,
-          username: user.username,
-          avatarUrl: userProfile.avatarUrl,
-        },
-      });
-
-      // Round survived the grace period (e.g. quick reload) — don't reset
-      // it, only a real fresh start needs a new round + GAME.STARTED.
-      if (!this.gameService.getRoundState(data.code)) {
-        this.gameService.initRound(data.code, room.id, room.creatorId, user.id);
-        this.server.to(data.code).emit(EVENTS.GAME.STARTED, {});
-      }
-      return;
     }
 
-    client.emit(EVENTS.ERROR, { message: 'Room is not available' });
+    if (result.previousRoomClosed) {
+      const { code: closedCode } = result.previousRoomClosed;
+      this.cancelRoomDisconnectTimers(closedCode);
+      this.gameService.resetRound(closedCode);
+      this.gameService.resetSessionScores(closedCode);
+      this.gameService.clearRestartRequests(closedCode);
+      void client.leave(closedCode);
+      this.server
+        .to(closedCode)
+        .emit(EVENTS.ROOM.CLOSED, { reason: 'host_left' });
+    }
+
+    this.cancelDisconnectTimer(data.code, user.id);
+
+    void client.join(data.code);
+    client.data.roomCode = data.code;
+
+    client.emit(EVENTS.ROOM.JOINED, {
+      room: result.room,
+      participant: { userId: user.id, username: user.username },
+    });
+
+    const userProfile = await this.usersService.getMe(user.id);
+    client.to(data.code).emit(EVENTS.ROOM.PLAYER_JOINED, {
+      participant: {
+        userId: user.id,
+        username: user.username,
+        avatarUrl: userProfile.avatarUrl,
+      },
+    });
+
+    // Round survived the grace period (e.g. quick reload) — don't reset
+    // it, only a real fresh start needs a new round + GAME.STARTED.
+    const needsNewRound =
+      result.forceNewRound ||
+      (result.role === 'opponent' &&
+        !this.gameService.getRoundState(data.code));
+
+    if (needsNewRound) {
+      this.gameService.initRound(
+        data.code,
+        result.room.id,
+        result.room.creatorId,
+        user.id,
+      );
+      this.server.to(data.code).emit(EVENTS.GAME.STARTED, {});
+    }
   }
 
   @SubscribeMessage(EVENTS.ROOM.LEFT)
@@ -371,28 +292,22 @@ export class AppGateway implements OnGatewayDisconnect, OnGatewayInit {
     const roomCode = client.data.roomCode;
     if (!roomCode) return;
 
-    if (!this.restartRequests.has(roomCode)) {
-      this.restartRequests.set(roomCode, new Set());
-    }
-    this.restartRequests.get(roomCode)!.add(user.id);
-
-    if (this.restartRequests.get(roomCode)!.size < 2) {
+    const bothRequested = this.gameService.requestRestart(roomCode, user.id);
+    if (!bothRequested) {
       client
         .to(roomCode)
         .emit(EVENTS.GAME.RESTART_REQUESTED, { requestedBy: user.id });
       return;
     }
 
-    this.restartRequests.delete(roomCode);
-
     const room = await this.roomsService.findByCode(roomCode);
     if (!room) return;
 
-    const participants = await this.roomsService.findParticipants(room.id);
-    const playerTwo = participants.find(
-      (p) => p.userId !== room.creatorId && p.leftAt === null,
+    const opponent = await this.roomsService.findActiveOpponent(
+      room.id,
+      room.creatorId,
     );
-    if (!playerTwo) {
+    if (!opponent) {
       client.emit(EVENTS.ERROR, { message: 'Opponent not found' });
       return;
     }
@@ -401,7 +316,7 @@ export class AppGateway implements OnGatewayDisconnect, OnGatewayInit {
       roomCode,
       room.id,
       room.creatorId,
-      playerTwo.userId,
+      opponent.userId,
     );
     this.server.to(roomCode).emit(EVENTS.GAME.STARTED, {});
   }

@@ -9,6 +9,7 @@ import type { ActiveRound, Choice } from './types/game.types.js';
 export class GameStore {
   private readonly rounds = new Map<string, ActiveRound>();
   private readonly sessionScores = new Map<string, Record<string, number>>();
+  private readonly restartRequests = new Map<string, Set<string>>();
 
   init(
     roomCode: string,
@@ -62,5 +63,20 @@ export class GameStore {
 
   resetSessionScores(roomCode: string): void {
     this.sessionScores.delete(roomCode);
+  }
+
+  requestRestart(roomCode: string, userId: string): boolean {
+    const requests = this.restartRequests.get(roomCode) ?? new Set<string>();
+    requests.add(userId);
+    this.restartRequests.set(roomCode, requests);
+
+    if (requests.size < 2) return false;
+
+    this.restartRequests.delete(roomCode);
+    return true;
+  }
+
+  clearRestartRequests(roomCode: string): void {
+    this.restartRequests.delete(roomCode);
   }
 }
