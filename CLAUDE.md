@@ -23,7 +23,8 @@ Monorepo with NestJS backend, React frontend, and shared TypeScript package.
 - JWT validated only at WS handshake, not on every event
 - RefreshToken NOT stored in DB — lives only in httpOnly cookie
 - In-memory Map for active round choices only — everything else in PostgreSQL
-- Score stored in RoomParticipant.score, reset on disconnect
+- RoomParticipant.score (PostgreSQL) — cumulative historical score, never reset
+- sessionScores (in-memory) — live session score, reset on disconnect
 - Room belongs to creator — one active room per user
 - When opponent disconnects → room returns to `waiting`, score resets
 - When creator disconnects → room becomes `finished`
@@ -44,7 +45,7 @@ error
 ## HTTP Endpoints
 POST /auth/register, POST /auth/login, POST /auth/logout, POST /auth/refresh
 GET /users/me, PATCH /users/me
-GET /rooms/my, POST /rooms, POST /rooms/:code/join, PATCH /rooms/:code
+GET /rooms/my, POST /rooms, GET /rooms/by-code/:code, GET /rooms/:roomId/participants, POST /rooms/:code/join, PATCH /rooms/:code
 
 ## Shared Package (@roshambo/shared)
 All WS event names as constants

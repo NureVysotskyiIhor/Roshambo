@@ -45,7 +45,9 @@ An online multiplayer Rock, Paper, Scissors game for two players — create a ro
 - **rooms/** — room lifecycle: create, join, list "my room", update; controller → service → mapper → repository layering.
 - **game/** — round/score logic: tracks active in-memory choices, persists finished rounds, computes results.
 - **gateway/** — the socket.io `AppGateway`, the single entry point for all real-time events (room presence and gameplay), delegating to `rooms`/`game` services.
-- **db/** — Drizzle schema, centralized inferred types (`db/types.ts`), and the Postgres connection pool.
+- **db/** — Drizzle schema, centralized inferred types (`db/types.ts`), and `DbModule` (registers the Drizzle instance as a NestJS provider via the `DRIZZLE` DI token).
+- **shared/** — cross-cutting building blocks: guards, HTTP/WS exception filters, decorators, and the domain exception hierarchy (`shared/exceptions/domain.exception.ts`).
+- **config/** — environment variable validation (`env.validation.ts`).
 
 ### Frontend structure (`frontend/src`)
 - **pages/** — route-level screens (`rooms-new.page.tsx`, `room.page.tsx`, auth pages).
@@ -56,6 +58,28 @@ An online multiplayer Rock, Paper, Scissors game for two players — create a ro
 - **api/** — typed HTTP client functions.
 - **socket/** — socket.io-client wrappers (`gameSocket`, `roomSocket`) exposing typed emit/on helpers with cleanup.
 - **lib/** — validation schemas (zod), shared utilities.
+
+## API Endpoints
+
+**Auth** (`auth/`)
+- `POST /auth/register`
+- `POST /auth/login`
+- `POST /auth/logout`
+- `POST /auth/refresh`
+
+**Users** (`users/`)
+- `GET /users/me`
+- `PATCH /users/me`
+
+**Rooms** (`rooms/`)
+- `GET /rooms/my`
+- `POST /rooms`
+- `GET /rooms/by-code/:code` — look up a room by its join code
+- `GET /rooms/:roomId/participants` — list a room's participants
+- `POST /rooms/:code/join`
+- `PATCH /rooms/:code`
+
+All WebSocket events are listed as constants in `@roshambo/shared` (`events.constants.ts`).
 
 ## How to Run Locally
 
@@ -87,8 +111,6 @@ An online multiplayer Rock, Paper, Scissors game for two players — create a ro
    npm run dev:backend
    npm run dev:frontend
    ```
-
-> A test WebSocket client is available at http://localhost:3000/test/test-ws.html for manual testing of real-time events without the frontend.
 
 ### Other useful commands
 - `npm run migrate:generate` — generate a new Drizzle migration from schema changes
@@ -139,12 +161,21 @@ FRONTEND_URL=http://localhost:5173
 
 - **Docker for PostgreSQL** — running Postgres in a container means contributors don't need to install and configure a database server locally; `docker-compose up -d` gives everyone an identical, disposable database with zero host configuration (beyond the port note below).
 
+- **`DbModule` registers Drizzle as a NestJS provider** — the Drizzle instance is created once via a `useFactory` provider bound to the `DRIZZLE` injection token, reading `DATABASE_URL` from the validated `ConfigService`. Repositories inject `DRIZZLE` instead of constructing their own DB connection, keeping database wiring inside Nest's DI container like any other dependency.
+
+- **Domain exceptions decouple business logic from transport** — services, repositories and the game store throw transport-agnostic `DomainException` subclasses (`NotFoundError`, `BadRequestError`, `ConflictError`, `UnauthorizedError`, `ForbiddenError`) instead of NestJS `HttpException`/`WsException`. `HttpExceptionFilter` and `WsExceptionFilter` map these to the correct HTTP status codes or `error` WS events at the boundary, so the same business logic works identically whether it's called from a controller or a gateway.
+
+- **`RoomsService.resolveJoin` returns a typed `RoomJoinResult`** — the gateway's `room:join` handler used to contain a 5-branch decision tree mixing DB lookups, participant management and game initialization. That logic now lives in `RoomsService.resolveJoin`, which returns a discriminated union (`not_found` | `active_game_conflict` | `unavailable` | `joined`). `AppGateway` simply switches on the result and emits the corresponding events — keeping the gateway a thin router.
+
+- **`AuthGate` bootstraps the session on page load** — before the router renders, `AuthGate` calls `GET /users/me` to restore `authStore.user` from the httpOnly cookie. This fixes auth state being lost on a hard reload (the access token cookie survives, but Zustand state doesn't), without storing any tokens in client-accessible storage.
+
+- **Grace-period disconnect handling** — when a socket disconnects unexpectedly, the gateway doesn't immediately tear down the room. It starts a 5-second timer (`RECONNECT_GRACE_MS`); if the same user reconnects within that window (e.g. a page reload), the timer is cancelled and the room/round state is preserved. Only if the grace period expires does the gateway run the normal leave logic (`room:opponent_left` / `room:closed`).
+
 ## Known Limitations
 
 - **Profile page UI is not implemented** — the backend endpoint (`PATCH /users/me`) is fully built and working, but the corresponding frontend page was not completed due to time constraints.
 - **`legacy-peer-deps=true` in `.npmrc`** — required to work around a peer-dependency conflict introduced by `eslint-plugin-react`; without it, `npm install` fails on peer-dep resolution.
 - **PostgreSQL runs on host port 5433, not 5432** — the default port 5432 was already occupied by a local PostgreSQL installation during development, so `docker-compose.yml` (and `DATABASE_URL`) map the container to 5433. If you don't have a local Postgres running, you can change both back to 5432.
-- **`backend/test/test-ws.html` and `@nestjs/serve-static`** — a static test page and its server module were added during development for manual WebSocket testing. Both can be removed before production deployment.
 
 ## Future Improvements
 
