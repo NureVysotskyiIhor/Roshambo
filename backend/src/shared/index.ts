@@ -1,3 +1,4 @@
+export * from './adapters/cors-io.adapter.js';
 export * from './guards/jwt-auth.guard.js';
 export * from './guards/ws-auth.guard.js';
 export * from './filters/http-exception.filter.js';

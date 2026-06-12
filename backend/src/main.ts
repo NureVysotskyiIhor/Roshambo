@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module.js';
 import { HttpExceptionFilter } from './shared/filters/http-exception.filter.js';
+import { CorsIoAdapter } from './shared/adapters/cors-io.adapter.js';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -14,6 +15,8 @@ async function bootstrap() {
     origin: configService.get<string>('FRONTEND_URL')?.split(','),
     credentials: true,
   });
+
+  app.useWebSocketAdapter(new CorsIoAdapter(app, configService));
 
   app.use(cookieParser());
 

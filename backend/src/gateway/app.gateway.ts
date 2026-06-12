@@ -25,12 +25,7 @@ interface JwtPayload {
   username: string;
 }
 
-@WebSocketGateway({
-  cors: {
-    origin: process.env.FRONTEND_URL,
-    credentials: true,
-  },
-})
+@WebSocketGateway()
 @UseFilters(WsExceptionFilter)
 export class AppGateway implements OnGatewayDisconnect, OnGatewayInit {
   @WebSocketServer()
