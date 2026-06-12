@@ -1,4 +1,51 @@
-export function Logo() {
+interface LogoProps {
+  variant?: 'default' | 'inline';
+}
+
+export function Logo({ variant = 'default' }: LogoProps) {
+  if (variant === 'inline') {
+    return (
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
+          <div
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              backgroundColor: 'var(--color-rock)',
+            }}
+          />
+          <div
+            style={{
+              width: 8,
+              height: 8,
+              backgroundColor: 'var(--color-paper)',
+            }}
+          />
+          <div
+            style={{
+              width: 8,
+              height: 8,
+              backgroundColor: 'var(--color-scissors)',
+              transform: 'rotate(45deg)',
+            }}
+          />
+        </div>
+        <span
+          style={{
+            fontSize: 16,
+            fontWeight: 700,
+            letterSpacing: '0.18em',
+            textTransform: 'uppercase',
+            color: 'var(--color-text)',
+          }}
+        >
+          ROSHAMBO
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="flex items-center gap-1.5" style={{ marginBottom: 12 }}>

@@ -1,11 +1,13 @@
 import { Outlet } from '@tanstack/react-router';
 import { Toaster } from 'sonner';
+import { AppHeader } from './app-header.component';
 
 export function RootLayout() {
   return (
     <>
       <Toaster position="top-right" richColors />
       <div className="min-h-screen flex flex-col">
+        <AppHeader />
         <main className="flex-1 flex items-center justify-center" style={{ padding: '32px 16px' }}>
           <Outlet />
         </main>
